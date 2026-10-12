@@ -26,6 +26,12 @@ exports.listOrdered = async () =>
       ORDER BY p.puntaje_total DESC NULLS LAST, t.fecha_registro DESC`
   )).rows;
 
+// Solo la forma de los terrenos registrados (sin ids ni datos de la oferta): se muestra en el mapa público.
+exports.contornos = async () =>
+  (await pool.query(
+    `SELECT ST_AsGeoJSON(geometria)::json AS geometry FROM terrenos_candidatos WHERE geometria IS NOT NULL`
+  )).rows;
+
 exports.findById = async (id) =>
   (await pool.query(
     `SELECT t.id_terreno, t.estado, t.area, t.fecha_registro,

@@ -6,6 +6,7 @@ const { requireAuth, requireRole } = require('../middlewares/auth');
 // Públicas
 router.post('/ofertas', c.crearOferta);
 router.post('/auth/login', c.login);
+router.get('/poligonos/registrados', limitadores.contornos, c.contornosRegistrados);
 router.post('/poligonos/validar', limitadores.validarPoligono, c.validarPoligono);
 
 // Internas

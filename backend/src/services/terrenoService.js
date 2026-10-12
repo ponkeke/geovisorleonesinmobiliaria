@@ -17,6 +17,12 @@ exports.getTerrenoOr404 = getTerrenoOr404;
 
 exports.listar = () => terrenoModel.listOrdered();
 
+// FeatureCollection pública con el contorno de cada terreno registrado, sin propiedades.
+exports.contornosPublicos = async () => ({
+  type: 'FeatureCollection',
+  features: (await terrenoModel.contornos()).map((r) => ({ type: 'Feature', properties: {}, geometry: r.geometry })),
+});
+
 exports.detalle = async (id) => {
   const terreno = await getTerrenoOr404(id);
   const [criterios_tecnicos, situacion_legal, informacion_financiera, puntaje, decision] = await Promise.all([

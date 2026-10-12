@@ -21,7 +21,7 @@ const opciones = () => ({
   compacidadMin: num(process.env.COMPACIDAD_MIN, 0.1),          // 4πA/P², alternativa si no hay ST_MaximumInscribedCircle
   colinealEpsilon: num(process.env.COLINEAL_EPSILON_GRADOS2, 1e-14), // área plana (grados²) bajo la cual la figura es una línea
   viaSuperposicionMaxPct: num(process.env.VIA_SUPERPOSICION_MAX_PCT, 10),
-  traslapeMaxPct: num(process.env.TRASLAPE_MAX_PCT, 20),
+  traslapeMaxPct: num(process.env.TRASLAPE_MAX_PCT, 1),
   validarVias: String(process.env.VALIDAR_VIAS ?? 'true').toLowerCase() !== 'false',
   anchosVias: anchosVias(process.env.VIAS_ANCHOS_M),
   viasDiasCache: num(process.env.VIAS_DIAS_CACHE, 30),

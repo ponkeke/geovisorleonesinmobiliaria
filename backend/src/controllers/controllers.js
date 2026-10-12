@@ -18,6 +18,7 @@ exports.detalleTerreno = h(async (req, res) => res.json(await terrenoService.det
 
 exports.cercanos = h(async (req, res) => res.json(await lugaresService.cercanos(req.params.id)));
 
+exports.contornosRegistrados = h(async (req, res) => res.json(await terrenoService.contornosPublicos()));
 exports.validarPoligono = h(async (req, res) => res.json(await validacionPoligono.validar(req.body?.poligono)));
 
 exports.criteriosTecnicos = h(async (req, res) =>

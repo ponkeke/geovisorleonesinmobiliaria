@@ -6,6 +6,23 @@ export const hasMapboxToken = MAPBOX_TOKEN.trim() !== '';
 if (hasMapboxToken) mapboxgl.accessToken = MAPBOX_TOKEN;
 
 export const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
+// Capas base que el usuario puede alternar.
+export const ESTILOS = {
+  calle: MAP_STYLE,
+  satelite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  relieve: 'mapbox://styles/mapbox/outdoors-v12',
+};
+
+// Ajustes de marca sobre el estilo de calle: agua y áreas verdes en la paleta del sitio y sin puntos de interés.
+// Cada capa se comprueba antes de tocarla porque los estilos de Mapbox cambian de ids entre versiones.
+export function aplicarMarca(map, capa) {
+  if (capa !== 'calle') return;
+  const pintar = (id, prop, valor) => { if (map.getLayer(id)) map.setPaintProperty(id, prop, valor); };
+  pintar('water', 'fill-color', '#cfe3dc');
+  pintar('landuse', 'fill-color', '#e8efe9');
+  pintar('national-park', 'fill-color', '#dbe8df');
+  if (map.getLayer('poi-label')) map.setLayoutProperty('poi-label', 'visibility', 'none');
+}
 export const DEFAULT_CENTER = [-80.63, -5.19];
 export const DEFAULT_ZOOM = 11;
 

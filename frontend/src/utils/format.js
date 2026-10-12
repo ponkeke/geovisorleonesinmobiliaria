@@ -10,6 +10,9 @@ export const formatSolesCorto = (n) => {
 // Código visible del terreno, derivado del id: 248 -> TR-0248
 export const codigoTerreno = (id) => `TR-${String(id).padStart(4, '0')}`;
 
+// Código visible de la oferta, derivado del id: 12 -> OF-0012
+export const codigoOferta = (id) => `OF-${String(id).padStart(4, '0')}`;
+
 export const ESTADOS = { en_evaluacion: 'En evaluación', aprobado: 'Aprobado', descartado: 'Descartado' };
 
 export const ROLES = {

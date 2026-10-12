@@ -215,9 +215,14 @@ describe('R4 · superposición con otro terreno registrado', () => {
     expect(reglas(await validar(cuadrado(-80.5995, -5.2, 110)))).toEqual(['R4']);
   });
 
-  test('superposición leve (< TRASLAPE_MAX_PCT): aceptado', async () => {
+  test('superposición del 9 %: rechazado', async () => {
     // Desplazado 100 m al este: solapa ~9 %.
-    expect((await validar(cuadrado(-80.599 - 10 * M_LNG, -5.2, 110))).body.valido).toBe(true);
+    expect(reglas(await validar(cuadrado(-80.599 - 10 * M_LNG, -5.2, 110)))).toEqual(['R4']);
+  });
+
+  test('roce de borde (< TRASLAPE_MAX_PCT): aceptado', async () => {
+    // Solapa 0,3 m de 110 m (~0,3 %): imprecisión al dibujar junto a un colindante.
+    expect((await validar(cuadrado(-80.599 - 0.3 * M_LNG, -5.2, 110))).body.valido).toBe(true);
   });
 
   test('terreno colindante (solo comparte el borde): aceptado', async () => {

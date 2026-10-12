@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Icon from '../components/Icon.jsx';
 import PolygonPicker from '../components/PolygonPicker.jsx';
+import imagenMapa from '../assets/mapa.png';
 import { hasMapboxToken } from '../components/mapConfig.js';
 import { enviarOferta, errorMessage } from '../services/api.js';
 import { centroide, direccionDesde } from '../utils/geocodificar.js';
@@ -122,7 +123,7 @@ export default function OfferForm() {
 
     setSending(true);
     try {
-      await enviarOferta({
+      const registrada = await enviarOferta({
         nombre_propietario: nombre.valor,
         contacto: contacto.valor,
         ubicacion_referencial: ubic.valor,
@@ -130,7 +131,9 @@ export default function OfferForm() {
         descripcion: descripcion.valor,
         poligono: poligono.geometry,
       });
-      navigate('/confirmacion');
+      navigate('/confirmacion', {
+        state: { oferta: { id: registrada.id_oferta, area: registrada.area, ubicacion: ubic.valor, precio: precio.valor, poligono: poligono.geometry } },
+      });
     } catch (err) {
       setSending(false);
       const { campo, error: msg } = err.response?.data || {};
@@ -201,30 +204,36 @@ export default function OfferForm() {
             <p className="sub">Cuéntanos quién eres y qué esperas por tu terreno.</p>
 
             <label className="field">Nombre del propietario
-              <input
-                {...a11y('nombre_propietario')} name="nombre_propietario" placeholder="Nombre y apellidos" maxLength={80}
-                autoComplete="name" value={form.nombre_propietario} onChange={onNombre} onBlur={onNombreBlur}
-              />
+              <span className="input-affix left">
+                <Icon name="user" size={16} />
+                <input
+                  {...a11y('nombre_propietario')} name="nombre_propietario" placeholder="Nombre y apellidos" maxLength={80}
+                  autoComplete="name" value={form.nombre_propietario} onChange={onNombre} onBlur={onNombreBlur}
+                />
+              </span>
               <Err name="nombre_propietario" />
             </label>
 
             <label className="field">Teléfono o correo
-              <input
-                {...a11y('contacto')} name="contacto" placeholder="999 123 456 / correo@ejemplo.com" maxLength={100}
-                autoComplete="email" value={form.contacto} onChange={(e) => setCampo('contacto', e.target.value)} onBlur={onContactoBlur}
-              />
+              <span className="input-affix left">
+                <Icon name="phone" size={16} />
+                <input
+                  {...a11y('contacto')} name="contacto" placeholder="999 123 456 / correo@ejemplo.com" maxLength={100}
+                  autoComplete="email" value={form.contacto} onChange={(e) => setCampo('contacto', e.target.value)} onBlur={onContactoBlur}
+                />
+              </span>
               <Err name="contacto" />
             </label>
 
             <label className="field">Precio solicitado
-              <span className="input-affix right">
+              <span className="input-affix left">
+                <span className="affix-text prefix">S/</span>
                 <input
                   {...a11y('precio_ofertado')} name="precio_ofertado" type="text" inputMode="decimal" placeholder="0.00"
                   value={precioMostrado} onChange={onPrecio}
                   onFocus={() => setPrecioEditando(true)}
                   onBlur={() => { setPrecioEditando(false); validar('precio_ofertado'); }}
                 />
-                <span className="affix-text">S/</span>
               </span>
               <Err name="precio_ofertado" />
             </label>
@@ -251,20 +260,28 @@ export default function OfferForm() {
         {paso === 2 && (
           <form onSubmit={submit} className="loc-grid" noValidate>
             <div className="loc-side">
+              <div className="loc-texto">
               <span className="eyebrow plain">PASO 2 DE 2</span>
               <h1>Ubicación del terreno</h1>
               <p className="sub">Señala el área exacta que deseas ofrecer.</p>
-              <label className="field">Dirección o referencia
+              </div>
+              <img className="loc-imagen" src={imagenMapa} alt="" width="180" height="180" />
+            </div>
+            <div className="loc-direccion">
+            <label className="field">Dirección o referencia
+              <span className="input-affix left">
+                <Icon name="pin" size={16} />
                 <input
                   {...a11y('ubicacion_referencial')} name="ubicacion_referencial" placeholder="Ej. Av. Los Olivos km 4"
                   value={form.ubicacion_referencial} onChange={onUbicacion}
                   onBlur={() => validar('ubicacion_referencial')}
                 />
-                <Err name="ubicacion_referencial" />
-                {!errors.ubicacion_referencial && sugerencia === 'cargando' && <span className="muted small-note">Obteniendo dirección…</span>}
-                {!errors.ubicacion_referencial && sugerencia === 'ok' && <span className="muted small-note">Dirección sugerida automáticamente. Puedes corregirla.</span>}
-                {!errors.ubicacion_referencial && sugerencia === 'fallo' && <span className="muted small-note">No se pudo obtener la dirección automáticamente, escribe una referencia</span>}
-              </label>
+              </span>
+              <Err name="ubicacion_referencial" />
+              {!errors.ubicacion_referencial && sugerencia === 'cargando' && <span className="muted small-note">Obteniendo dirección…</span>}
+              {!errors.ubicacion_referencial && sugerencia === 'ok' && <span className="muted small-note">Dirección sugerida automáticamente. Puedes corregirla.</span>}
+              {!errors.ubicacion_referencial && sugerencia === 'fallo' && <span className="muted small-note">No se pudo obtener la dirección automáticamente, escribe una referencia</span>}
+            </label>
               {!hasMapboxToken && <p className="error">No se puede enviar la oferta sin el mapa (falta el token de Mapbox).</p>}
             </div>
             <div className="loc-map">

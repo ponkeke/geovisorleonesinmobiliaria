@@ -30,6 +30,9 @@ export const getUsuario = () => JSON.parse(localStorage.getItem('usuario') || 'n
 export const validarPoligono = (poligono) =>
   api.post('/poligonos/validar', { poligono }, { timeout: 60000 }).then((r) => r.data);
 
+// Contorno (sin datos personales) de los terrenos ya registrados, para mostrarlos al dibujar.
+export const contornosRegistrados = () => api.get('/poligonos/registrados').then((r) => r.data);
+
 export const listarTerrenos = () => api.get('/terrenos').then((r) => r.data);
 export const getTerreno = (id) => api.get(`/terrenos/${id}`).then((r) => r.data);
 // Overpass puede tardar (timeout + reintentos en el servidor), por eso el plazo es mayor.
