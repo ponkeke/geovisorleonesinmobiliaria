@@ -1,4 +1,7 @@
-const router = require('express').Router();
+const express = require('express');
+const { opciones: opcionesArchivos } = require('../config/archivos');
+
+const router = express.Router();
 const c = require('../controllers/controllers');
 const limitadores = require('../middlewares/limitadores');
 const { requireAuth, requireRole } = require('../middlewares/auth');
@@ -6,6 +9,7 @@ const { requireAuth, requireRole } = require('../middlewares/auth');
 // Públicas
 router.post('/ofertas', c.crearOferta);
 router.post('/auth/login', c.login);
+router.get('/poligonos/registrados', limitadores.contornos, c.contornosRegistrados);
 router.post('/poligonos/validar', limitadores.validarPoligono, c.validarPoligono);
 
 // Internas
@@ -13,6 +17,13 @@ router.use('/terrenos', requireAuth);
 router.get('/terrenos', c.listarTerrenos);
 router.get('/terrenos/:id', c.detalleTerreno);
 router.get('/terrenos/:id/cercanos', c.cercanos);
+router.get('/terrenos/:id/acceso', c.acceso);
+// Archivos de la visita: el cuerpo es el archivo (cualquier Content-Type); el tamaño máximo lo corta el parser.
+const o = opcionesArchivos();
+const cuerpoArchivo = express.raw({ type: () => true, limit: Math.max(o.fotoMaxBytes, o.reporteMaxBytes) });
+router.get('/terrenos/:id/archivos/:idArchivo', c.descargarArchivo);
+router.post('/terrenos/:id/archivos', requireRole('tecnica', 'legal', 'administrativa'), cuerpoArchivo, c.subirArchivo);
+router.delete('/terrenos/:id/archivos/:idArchivo', requireRole('tecnica', 'legal', 'administrativa'), c.eliminarArchivo);
 router.post('/terrenos/:id/criterios-tecnicos', requireRole('tecnica'), c.criteriosTecnicos);
 router.post('/terrenos/:id/situacion-legal', requireRole('legal'), c.situacionLegal);
 router.post('/terrenos/:id/informacion-financiera', requireRole('administrativa'), c.informacionFinanciera);

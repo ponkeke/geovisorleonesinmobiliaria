@@ -4,3 +4,6 @@ dist
 *.log
 
 backend/coverage/
+
+# Fotos y reportes subidos por el Área Técnica
+backend/uploads/

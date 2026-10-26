@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Logo from '../components/Logo.jsx';
 import Icon from '../components/Icon.jsx';
+import { useSessionTransition } from '../components/SessionTransition.jsx';
 import { login, errorMessage } from '../services/api.js';
+import fondoLogin from '../assets/ImagenTerreno.png';
 
 const ROLES = ['Gerencia', 'Área Técnica', 'Área Legal', 'Área Administrativa'];
 
@@ -13,14 +15,18 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { runWithTransition } = useSessionTransition();
 
   const submit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setError('');
     setLoading(true);
     try {
-      await login(correo, password);
-      navigate('/panel');
+      await runWithTransition(() => login(correo, password), {
+        message: 'Iniciando sesión…', detail: 'Estamos preparando tu acceso al geovisor.',
+      });
+      navigate('/panel', { replace: true });
     } catch (err) {
       setError(errorMessage(err));
       setLoading(false);
@@ -29,7 +35,8 @@ export default function Login() {
 
   return (
     <div className="login-page">
-      <span className="blob b1" /><span className="blob b2" />
+      <img className="login-bg" src={fondoLogin} alt="" aria-hidden="true" />
+      <span className="login-velo" aria-hidden="true" />
       <form className="card-lg login-card" onSubmit={submit}>
         <Logo />
         <span className="chip">ACCESO INTERNO</span>
@@ -58,6 +65,7 @@ export default function Login() {
         <div className="notice"><Icon name="shield" size={18} />
           <span>Acceso exclusivo para personal interno autorizado de Leones Grupo Inmobiliaria.</span>
         </div>
+        <Link to="/" className="btn outline block volver"><Icon name="arrow" size={16} className="flip" /> Volver al inicio</Link>
       </form>
     </div>
   );

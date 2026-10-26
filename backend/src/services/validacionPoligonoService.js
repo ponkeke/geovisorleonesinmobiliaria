@@ -50,6 +50,16 @@ const caja = (g) => {
   return [Math.min(...ys), Math.min(...xs), Math.max(...ys), Math.max(...xs)]; // sur, oeste, norte, este
 };
 
+// Rechaza si `promesa` no termina en `ms` (Overpass puede tardar más de un minuto entre reintentos y espejos).
+function conLimite(promesa, ms) {
+  let temporizador;
+  const limite = new Promise((_, reject) => {
+    temporizador = setTimeout(() => reject(new Error(`Overpass no respondió en ${ms} ms`)), ms);
+  });
+  promesa.catch(() => {});   // si pierde la carrera, su fallo posterior no queda sin manejar
+  return Promise.race([promesa, limite]).finally(() => clearTimeout(temporizador));
+}
+
 // Garantiza vías recientes en caché para la zona; devuelve true si hay datos utilizables.
 // Si Overpass falla no lanza: registra y devuelve false (no se bloquea al usuario).
 async function asegurarVias(geom, o) {
@@ -58,7 +68,7 @@ async function asegurarVias(geom, o) {
     if (!(await viaModel.hayRecientes(geom, margen, o.viasDiasCache))) {
       const [sur, oeste, norte, este] = caja(geom);
       const c = overpass.cajaConRadio({ sur, oeste, norte, este }, o.viasMargenM);
-      await viaModel.upsert(await overpass.buscarVias(c, Object.keys(o.anchosVias)));
+      await viaModel.upsert(await conLimite(overpass.buscarVias(c, Object.keys(o.anchosVias)), o.viasTimeoutMs));
     }
     return await viaModel.hayRecientes(geom, margen, o.viasDiasCache);
   } catch (e) {
@@ -141,3 +151,4 @@ exports.validar = async (input) => {
 };
 
 exports.extraer = extraer;
+exports.asegurarVias = asegurarVias;

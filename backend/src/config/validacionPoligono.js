@@ -21,11 +21,12 @@ const opciones = () => ({
   compacidadMin: num(process.env.COMPACIDAD_MIN, 0.1),          // 4πA/P², alternativa si no hay ST_MaximumInscribedCircle
   colinealEpsilon: num(process.env.COLINEAL_EPSILON_GRADOS2, 1e-14), // área plana (grados²) bajo la cual la figura es una línea
   viaSuperposicionMaxPct: num(process.env.VIA_SUPERPOSICION_MAX_PCT, 10),
-  traslapeMaxPct: num(process.env.TRASLAPE_MAX_PCT, 20),
+  traslapeMaxPct: num(process.env.TRASLAPE_MAX_PCT, 1),
   validarVias: String(process.env.VALIDAR_VIAS ?? 'true').toLowerCase() !== 'false',
   anchosVias: anchosVias(process.env.VIAS_ANCHOS_M),
   viasDiasCache: num(process.env.VIAS_DIAS_CACHE, 30),
   viasMargenM: num(process.env.VIAS_MARGEN_M, 100),             // zona alrededor del polígono para cargar vías
+  viasTimeoutMs: num(process.env.VIAS_TIMEOUT_MS, 30000),       // tope total de la consulta de vías (si Overpass no responde se valida sin R3)
   maxBytes: num(process.env.VALIDAR_MAX_BYTES, 51200),
   maxVertices: num(process.env.VALIDAR_MAX_VERTICES, 500),
   rateMax: num(process.env.VALIDAR_RATE_MAX, 30),

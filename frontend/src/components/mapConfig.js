@@ -6,6 +6,23 @@ export const hasMapboxToken = MAPBOX_TOKEN.trim() !== '';
 if (hasMapboxToken) mapboxgl.accessToken = MAPBOX_TOKEN;
 
 export const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
+// Capas base que el usuario puede alternar.
+export const ESTILOS = {
+  calle: MAP_STYLE,
+  satelite: 'mapbox://styles/mapbox/satellite-streets-v12',
+  relieve: 'mapbox://styles/mapbox/outdoors-v12',
+};
+
+// Ajustes de marca sobre el estilo de calle: agua y áreas verdes en la paleta del sitio y sin puntos de interés.
+// Cada capa se comprueba antes de tocarla porque los estilos de Mapbox cambian de ids entre versiones.
+export function aplicarMarca(map, capa) {
+  if (capa !== 'calle') return;
+  const pintar = (id, prop, valor) => { if (map.getLayer(id)) map.setPaintProperty(id, prop, valor); };
+  pintar('water', 'fill-color', '#cfe3dc');
+  pintar('landuse', 'fill-color', '#e8efe9');
+  pintar('national-park', 'fill-color', '#dbe8df');
+  if (map.getLayer('poi-label')) map.setLayoutProperty('poi-label', 'visibility', 'none');
+}
 export const DEFAULT_CENTER = [-80.63, -5.19];
 export const DEFAULT_ZOOM = 11;
 
@@ -17,10 +34,10 @@ export const PRECISION_MAX_M = 100;
 
 // Viabilidad: alta >= 70, media >= 40, baja < 40; sin puntaje -> gris.
 export const NIVELES = {
-  alta: { label: 'Alta', color: '#2f7a5a' },
-  media: { label: 'Media', color: '#c98f3a' },
-  baja: { label: 'Baja', color: '#a9473f' },
-  sin: { label: 'Sin puntaje', color: '#8a948e' },
+  alta: { label: 'Alta', color: '#2f7a5a', textColor: '#2f7a5a' },
+  media: { label: 'Media', color: '#c98f3a', textColor: '#c98f3a' },
+  baja: { label: 'Baja', color: '#a9473f', textColor: '#a9473f' },
+  sin: { label: 'Sin puntaje', color: '#8a948e', textColor: '#8a948e' },
 };
 export const nivelViabilidad = (puntaje) => {
   if (puntaje === null || puntaje === undefined) return 'sin';
@@ -42,7 +59,8 @@ export function boundsOf(geometries) {
 }
 
 // Colores de los lugares cercanos por categoría (clave del backend); las nuevas usan COLOR_LUGAR_DEFECTO.
-export const COLORES_LUGARES = { via_principal: '#c0392b', colegio: '#2c6fbb', universidad: '#7b4fa3' };
+export const COLORES_LUGARES = { via_principal: '#c0392b', colegio: '#2c6fbb', universidad: '#7b4fa3', tienda: '#d68910', restaurante: '#d35400', parque: '#27ae60',
+  salud: '#c2185b', mercado: '#8d5524', banco: '#00838f' };
 export const COLOR_LUGAR_DEFECTO = '#555f5a';
 export const colorLugar = (clave) => COLORES_LUGARES[clave] || COLOR_LUGAR_DEFECTO;
 

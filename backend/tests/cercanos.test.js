@@ -11,23 +11,32 @@ const falla = (status) => ({ ok: false, status, json: async () => ({}) });
 const VIA = { type: 'way', id: 11, tags: { highway: 'primary', name: 'Av. Principal' },
   geometry: [{ lat: -5.21, lon: -80.597 }, { lat: -5.19, lon: -80.597 }] };          // ~221.7 m al este
 const VIA_LEJANA = { type: 'way', id: 12, tags: { highway: 'secondary', ref: 'PE-1N' },
-  geometry: [{ lat: -5.21, lon: -80.591 }, { lat: -5.19, lon: -80.591 }] };          // ~887 m al este
+  geometry: [{ lat: -5.21, lon: -80.5925 }, { lat: -5.19, lon: -80.5925 }] };        // ~720 m al este
+const VIA_FUERA = { type: 'way', id: 14, tags: { highway: 'secondary', ref: 'PE-2S' },
+  geometry: [{ lat: -5.21, lon: -80.591 }, { lat: -5.19, lon: -80.591 }] };          // ~887 m al este: fuera del radio
 const VIA_LOCAL = { type: 'way', id: 13, tags: { highway: 'residential', name: 'Calle' },
   geometry: [{ lat: -5.21, lon: -80.5991 }, { lat: -5.19, lon: -80.5991 }] };         // no es vía principal
 const COLEGIO = { type: 'node', id: 21, lat: -5.1985, lon: -80.5995, tags: { amenity: 'school', name: 'Colegio Norte' } };   // ~55 m al norte
-const COLEGIO_DENTRO = { type: 'node', id: 22, lat: -5.1995, lon: -80.5995, tags: { amenity: 'school' } };                  // dentro: 0 m
+const COLEGIO_DENTRO = { type: 'node', id: 22, lat: -5.1995, lon: -80.5995, tags: { amenity: 'school', name: 'Colegio Central' } };  // dentro: 0 m
+const COLEGIO_SIN_NOMBRE = { type: 'node', id: 24, lat: -5.1992, lon: -80.5993, tags: { amenity: 'school' } };            // sin nombre: se descarta
 const COLEGIO_LEJOS = { type: 'node', id: 23, lat: -5.15, lon: -80.6, tags: { amenity: 'school', name: 'Lejano' } };        // ~5.5 km
-const UNIVERSIDAD = { type: 'way', id: 31, center: { lat: -5.2, lon: -80.59 }, tags: { amenity: 'university', name: 'Univ. Este' } }; // ~1 km
+const UNIVERSIDAD = { type: 'way', id: 31, center: { lat: -5.2, lon: -80.5925 }, tags: { amenity: 'university', name: 'Univ. Este' } }; // ~720 m
 const INSTITUTO = { type: 'node', id: 32, lat: -5.1980, lon: -80.6, tags: { amenity: 'college', name: 'Instituto' } };       // ~110 m al norte
 
-const TODOS = [VIA, VIA_LEJANA, VIA_LOCAL, COLEGIO, COLEGIO_DENTRO, COLEGIO_LEJOS, UNIVERSIDAD, INSTITUTO];
+const anillo = [[-80.5975, -5.2], [-80.597, -5.2], [-80.597, -5.1995], [-80.5975, -5.1995], [-80.5975, -5.2]];
+const PARQUE = { type: 'way', id: 41, tags: { leisure: 'park', name: 'Parque Central' },
+  geometry: anillo.map(([lon, lat]) => ({ lat, lon })) };                                    // ~166 m al este
+const PARQUE_ABIERTO = { type: 'way', id: 42, tags: { leisure: 'park', name: 'Sin cerrar' },
+  geometry: anillo.slice(0, 4).map(([lon, lat]) => ({ lat, lon })) };
+
+const TODOS = [VIA, VIA_LEJANA, VIA_FUERA, VIA_LOCAL, COLEGIO, COLEGIO_DENTRO, COLEGIO_SIN_NOMBRE, COLEGIO_LEJOS, UNIVERSIDAD, INSTITUTO];
 
 describe('Overpass: consulta y normalización', () => {
   test('la caja se amplía por el radio en cada lado', () => {
-    const [s, w, n, e] = cajaConRadio({ sur: -5.2, oeste: -80.6, norte: -5.199, este: -80.599 }, 2000);
-    expect(-5.2 - s).toBeCloseTo(2000 / 110540, 6);
-    expect(n - -5.199).toBeCloseTo(2000 / 110540, 6);
-    expect(-80.6 - w).toBeCloseTo(2000 / (111320 * Math.cos(5.1995 * Math.PI / 180)), 5);
+    const [s, w, n, e] = cajaConRadio({ sur: -5.2, oeste: -80.6, norte: -5.199, este: -80.599 }, 800);
+    expect(-5.2 - s).toBeCloseTo(800 / 110540, 6);
+    expect(n - -5.199).toBeCloseTo(800 / 110540, 6);
+    expect(-80.6 - w).toBeCloseTo(800 / (111320 * Math.cos(5.1995 * Math.PI / 180)), 5);
     expect(e + 80.599).toBeCloseTo(-80.6 - w, 6);
   });
 
@@ -43,11 +52,20 @@ describe('Overpass: consulta y normalización', () => {
   test('clasifica por categoría y descarta lo que no coincide', () => {
     expect(normalizar(COLEGIO)).toMatchObject({ id_osm: 'node/21', categoria: 'colegio', nombre: 'Colegio Norte' });
     expect(normalizar(INSTITUTO).categoria).toBe('universidad');
-    expect(normalizar(UNIVERSIDAD).geom).toEqual({ type: 'Point', coordinates: [-80.59, -5.2] });
+    expect(normalizar(UNIVERSIDAD).geom).toEqual({ type: 'Point', coordinates: [-80.5925, -5.2] });
     expect(normalizar(VIA)).toMatchObject({ id_osm: 'way/11', categoria: 'via_principal' });
     expect(normalizar(VIA).geom.type).toBe('LineString');
     expect(normalizar(VIA_LEJANA).nombre).toBe('PE-1N');
     expect(normalizar(VIA_LOCAL)).toBeNull();
+    expect(normalizar(PARQUE)).toMatchObject({ id_osm: 'way/41', categoria: 'parque', geom: { type: 'Polygon', coordinates: [anillo] } });
+    expect(normalizar(PARQUE_ABIERTO)).toBeNull();                    // contorno sin cerrar
+    expect(normalizar({ type: 'relation', id: 5, center: { lat: -5.2, lon: -80.6 }, tags: { leisure: 'park', name: 'Rel' } }).geom.type).toBe('Point');
+    expect(normalizar(COLEGIO_SIN_NOMBRE)).toBeNull();                // sin name ni ref: no se muestra
+    // Categorías de apoyo a la revisión técnica: salud, mercados, bancos.
+    expect(normalizar({ type: 'node', id: 51, lat: -5.2, lon: -80.6, tags: { amenity: 'hospital', name: 'Hospital' } }).categoria).toBe('salud');
+    expect(normalizar({ type: 'node', id: 52, lat: -5.2, lon: -80.6, tags: { amenity: 'clinic', name: 'Posta' } }).categoria).toBe('salud');
+    expect(normalizar({ type: 'node', id: 53, lat: -5.2, lon: -80.6, tags: { amenity: 'marketplace', name: 'Mercado' } }).categoria).toBe('mercado');
+    expect(normalizar({ type: 'node', id: 54, lat: -5.2, lon: -80.6, tags: { amenity: 'bank', name: 'Banco' } }).categoria).toBe('banco');
     expect(normalizar({ type: 'node', id: 1, lat: 0, lon: 0, tags: { shop: 'bakery' } })).toBeNull();
   });
 });
@@ -81,18 +99,26 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
     expect(r.body.fuente).toBe('Datos de OpenStreetMap');
     expect(r.body.error).toBeNull();
     expect(r.body.origen).toBe('overpass');
-    expect(r.body.radio_m).toBe(2000);
+    expect(r.body.radio_m).toBe(800);
 
     const vias = cat(r.body, 'via_principal');
-    expect(vias).toHaveLength(2);                                   // la calle residencial no cuenta
+    expect(vias).toHaveLength(2);                                   // la calle residencial no cuenta y la de 887 m queda fuera del radio
+    expect(vias.find((v) => v.nombre === 'PE-2S')).toBeUndefined();
     expect(vias[0].nombre).toBe('Av. Principal');
     expect(vias[0].distancia_m).toBeCloseTo(221.7, 0);              // 0.002° de longitud a 5.2° S
     expect(vias[1].distancia_m).toBeGreaterThan(vias[0].distancia_m);
     expect(vias[0].lng).toBeCloseTo(-80.597, 5);
+    expect(vias[0].id).toBe('way/11');
+    // La vía llega como tramo (recortado al radio de 800 m), no solo como punto.
+    expect(['LineString', 'MultiLineString']).toContain(vias[0].trazo.type);
+    const lats = vias[0].trazo.coordinates.flat(vias[0].trazo.type === 'MultiLineString' ? 1 : 0).map((c) => c[1]);
+    expect(Math.min(...lats)).toBeGreaterThan(-5.21);
+    expect(Math.max(...lats)).toBeLessThan(-5.19);
 
     const colegios = cat(r.body, 'colegio');
-    expect(colegios).toHaveLength(2);                               // el lejano queda fuera del radio
-    expect(colegios[0].distancia_m).toBe(0);                        // dentro del polígono
+    expect(colegios).toHaveLength(2);                               // el lejano queda fuera del radio y el sin nombre no se muestra
+    expect(colegios.every((c) => c.nombre && c.trazo === null)).toBe(true);
+    expect(colegios[0]).toMatchObject({ nombre: 'Colegio Central', distancia_m: 0 });   // dentro del polígono
     expect(colegios[1]).toMatchObject({ nombre: 'Colegio Norte', lat: -5.1985, lng: -80.5995 });
     expect(colegios[1].distancia_m).toBeCloseTo(55.3, 0);           // 0.0005° de latitud sobre el borde norte
     expect(colegios.find((c) => c.nombre === 'Lejano')).toBeUndefined();
@@ -100,7 +126,7 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
     const unis = cat(r.body, 'universidad');
     expect(unis.map((u) => u.nombre)).toEqual(['Instituto', 'Univ. Este']);
     expect(unis[0].distancia_m).toBeCloseTo(110.6, 0);              // 0.001° de latitud
-    expect(unis[1].distancia_m).toBeCloseTo(1000, -2);
+    expect(unis[1].distancia_m).toBeCloseTo(720, -1);
 
     expect(r.body.distancia_via_principal_m).toBe(vias[0].distancia_m);
   });
@@ -108,7 +134,7 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
   test('guarda en puntos_interes sin duplicar por id_osm y reutiliza lo guardado < 7 días', async () => {
     await pedir();
     const { rows: [{ n }] } = await pool.query('SELECT count(*)::int AS n FROM puntos_interes');
-    expect(n).toBe(7);                                              // 8 elementos menos la calle local
+    expect(n).toBe(8);                                              // 10 elementos menos la calle local y el colegio sin nombre
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const r2 = await pedir();
@@ -127,8 +153,8 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
       `SELECT count(*)::int AS n,
               count(*) FILTER (WHERE fecha_sincronizacion > now() - interval '1 minute')::int AS recientes
          FROM puntos_interes`);
-    expect(n).toBe(7);
-    expect(recientes).toBe(7);
+    expect(n).toBe(8);
+    expect(recientes).toBe(8);
   });
 
   test('la consulta sale del servidor hacia Overpass', async () => {
@@ -137,7 +163,7 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
     expect(url).toBe(process.env.OVERPASS_URL);
     expect(opts.method).toBe('POST');
     const q = decodeURIComponent(opts.body.replace(/\+/g, ' '));
-    expect(q).toMatch(/\(-5\.2\d+,-80\.6\d+,-5\.1\d+,-80\.5\d+\)/);   // caja del polígono + 2000 m
+    expect(q).toMatch(/\(-5\.2\d+,-80\.6\d+,-5\.1\d+,-80\.5\d+\)/);   // caja del polígono + 800 m
   });
 
   test('reintenta si Overpass falla una vez y luego responde', async () => {
@@ -224,6 +250,19 @@ describe('GET /api/terrenos/:id/cercanos (Overpass simulado)', () => {
       .send({ distancia_via_principal: 350, compatibilidad_normativa: true });
     expect(r.status).toBe(201);
     expect(r.body.registro.distancia_via_principal).toBe(350);
+  });
+
+  test('parques: se devuelve el contorno completo (zona), no un punto', async () => {
+    fetchMock.mockReset();
+    fetchMock.mockResolvedValue(ok([PARQUE, PARQUE_ABIERTO, COLEGIO]));
+    const r = await pedir();
+    const parques = cat(r.body, 'parque');
+    expect(parques).toHaveLength(1);
+    expect(parques[0]).toMatchObject({ id: 'way/41', nombre: 'Parque Central', trazo: null });
+    expect(parques[0].area.type).toBe('Polygon');
+    expect(parques[0].area.coordinates[0]).toHaveLength(5);
+    expect(parques[0].distancia_m).toBeCloseTo(166, -1);
+    expect(cat(r.body, 'colegio')[0].area).toBeNull();
   });
 
   test('zona sin vía principal: distancia_via_principal_m es null (sin error)', async () => {
