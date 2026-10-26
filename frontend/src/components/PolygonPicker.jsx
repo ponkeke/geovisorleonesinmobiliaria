@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import turfArea from '@turf/area';
@@ -13,24 +14,24 @@ import BuscadorLugares from './BuscadorLugares.jsx';
 import { crearModos, instalarZonas, ladoBloqueado, MENSAJE_ZONA } from './zonasProhibidas.js';
 
 const AVISO_UBICACION = 'Tu ubicación aproximada puede no ser exacta. Busca la dirección o ajusta el mapa manualmente.';
-const GREEN = '#2b4a3e';
+const CONTORNO = '#2b4a3e';
 const FILL = '#2f7a5a';
-const ROJO = '#c0392b';
-const REGISTRADO = '#b71c1c';   // terrenos ya registrados en el sistema (relleno rojo, línea continua)
+const RESTRINGIDO = '#c0392b';
+const REGISTRADO = '#b71c1c';   // terrenos ya registrados (relleno rojo, línea continua)
 const vertex = ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']];
 const DRAW_STYLES = [
-  { id: 'poly-fill', type: 'fill', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': ['case', ['==', ['get', 'user_invalido'], 'true'], ROJO, FILL], 'fill-opacity': 0.38 } },
+  { id: 'poly-fill', type: 'fill', filter: ['==', '$type', 'Polygon'], paint: { 'fill-color': ['case', ['==', ['get', 'user_invalido'], 'true'], RESTRINGIDO, FILL], 'fill-opacity': 0.38 } },
   // Contorno nuevo con línea discontinua; los terrenos ya registrados llevan línea continua.
   { id: 'poly-stroke', type: 'line', filter: ['==', '$type', 'Polygon'],
     layout: { 'line-cap': 'butt', 'line-join': 'round' },
-    paint: { 'line-color': ['case', ['==', ['get', 'user_invalido'], 'true'], ROJO, GREEN], 'line-width': 2.5, 'line-dasharray': [3, 2] } },
+    paint: { 'line-color': ['case', ['==', ['get', 'user_invalido'], 'true'], RESTRINGIDO, CONTORNO], 'line-width': 2.5, 'line-dasharray': [3, 2] } },
   { id: 'line', type: 'line', filter: ['==', '$type', 'LineString'],
-    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': GREEN, 'line-width': 2.5, 'line-dasharray': [2, 2] } },
+    layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': CONTORNO, 'line-width': 2.5, 'line-dasharray': [2, 2] } },
   // Vértices visibles también mientras se dibuja (los puntos propios de Draw solo aparecen al editar).
   { id: 'poly-vertices-live', type: 'circle', filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
-    paint: { 'circle-radius': 6.5, 'circle-color': '#fff', 'circle-stroke-color': GREEN, 'circle-stroke-width': 2.5 } },
+    paint: { 'circle-radius': 6.5, 'circle-color': '#fff', 'circle-stroke-color': CONTORNO, 'circle-stroke-width': 2.5 } },
   { id: 'vertex-halo', type: 'circle', filter: vertex, paint: { 'circle-radius': 10, 'circle-color': '#fff' } },
-  { id: 'vertex', type: 'circle', filter: vertex, paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': GREEN, 'circle-stroke-width': 2.5 } },
+  { id: 'vertex', type: 'circle', filter: vertex, paint: { 'circle-radius': 7, 'circle-color': '#fff', 'circle-stroke-color': CONTORNO, 'circle-stroke-width': 2.5 } },
   { id: 'midpoint', type: 'circle', filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
     paint: { 'circle-radius': 4, 'circle-color': FILL } },
 ];
@@ -95,6 +96,9 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
   const [capa, setCapa] = useState('calle');   // calle | satelite | relieve
   const [pantallaCompleta, setPantallaCompleta] = useState(false);
   const wrapRef = useRef(null);
+  const cardRef = useRef(null);
+  const huecoRef = useRef(null);
+  const [enUso, setEnUso] = useState(false);   // el usuario está trabajando en el mapa: se atenúa el resto de la página
   const registradosRef = useRef(VACIO_GEO);   // contornos de terrenos ya registrados (se reinstalan al cambiar de estilo)
   const [badgePos, setBadgePos] = useState(null);   // posición { x, y } de la insignia de área si el usuario la movió
   const arrastreRef = useRef(null);
@@ -150,16 +154,16 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
         map.addSource('medidas', { type: 'geojson', data: VACIO });
         map.addLayer({ id: 'medidas', type: 'symbol', source: 'medidas',
           layout: { 'text-field': ['get', 'texto'], 'text-size': 12, 'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'], 'text-allow-overlap': false },
-          paint: { 'text-color': GREEN, 'text-halo-color': '#fff', 'text-halo-width': 2 } });
+          paint: { 'text-color': CONTORNO, 'text-halo-color': '#fff', 'text-halo-width': 2 } });
       }
       if (map.getSource('problema')) return;
       map.addSource('problema', { type: 'geojson', data: VACIO });
       map.addLayer({ id: 'problema-fill', type: 'fill', source: 'problema', filter: ['==', '$type', 'Polygon'],
-        paint: { 'fill-color': ROJO, 'fill-opacity': 0.55 } });
+        paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.55 } });
       map.addLayer({ id: 'problema-line', type: 'line', source: 'problema',
-        paint: { 'line-color': ROJO, 'line-width': 3 } });
+        paint: { 'line-color': RESTRINGIDO, 'line-width': 3 } });
       map.addLayer({ id: 'problema-punto', type: 'circle', source: 'problema', filter: ['==', '$type', 'Point'],
-        paint: { 'circle-radius': 9, 'circle-color': ROJO, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
+        paint: { 'circle-radius': 9, 'circle-color': RESTRINGIDO, 'circle-stroke-color': '#fff', 'circle-stroke-width': 3 } });
     };
     const mostrarProblema = (geometry) => {
       problemaRef.current = geometry || null;
@@ -276,6 +280,28 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
     return () => { if (cuadro) cancelAnimationFrame(cuadro); marcadorRef.current?.remove(); document.removeEventListener('fullscreenchange', alCambiarPantalla); clearTimeout(temporizador); if (permiso) permiso.onchange = null; map.remove(); mapRef.current = null; drawRef.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Un clic fuera del mapa devuelve la página a su aspecto normal; tocar el mapa la vuelve a atenuar.
+  useEffect(() => {
+    const fuera = (e) => { if (cardRef.current && !cardRef.current.contains(e.target)) setEnUso(false); };
+    document.addEventListener('pointerdown', fuera);
+    return () => document.removeEventListener('pointerdown', fuera);
+  }, []);
+
+  // La capa oscura es un hueco con sombra gigante que sigue al mapa: oscurece todo salvo el mapa.
+  useEffect(() => {
+    if (!enUso) return undefined;
+    let cuadro = requestAnimationFrame(function seguir() {
+      const r = cardRef.current?.getBoundingClientRect();
+      const h = huecoRef.current;
+      if (r && h) {
+        Object.assign(h.style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`,
+          borderRadius: getComputedStyle(cardRef.current).borderRadius });
+      }
+      cuadro = requestAnimationFrame(seguir);
+    });
+    return () => cancelAnimationFrame(cuadro);
+  }, [enUso]);
+
   const dibujar = () => { drawRef.current.changeMode('draw_polygon'); setModo('dibujando'); };
 
   // Cierra la figura sin doble clic: al salir de draw_polygon, Draw descarta el punto móvil y emite draw.create.
@@ -363,7 +389,7 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
     const map = mapRef.current;
     setSearchMsg('');
     marcadorRef.current?.remove();
-    marcadorRef.current = new mapboxgl.Marker({ color: GREEN }).setLngLat(centro).addTo(map);
+    marcadorRef.current = new mapboxgl.Marker({ color: CONTORNO }).setLngLat(centro).addTo(map);
     if (bbox) map.fitBounds([[bbox[0], bbox[1]], [bbox[2], bbox[3]]], { padding: 80, maxZoom: 17 });
     else map.flyTo({ center: centro, zoom: 17 });
   };
@@ -377,12 +403,15 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
     idle: 'Pulsa «Dibujar contorno» y marca las esquinas de tu terreno en el mapa.',
     dibujando: puntos >= 3
       ? 'Sigue marcando esquinas o pulsa «Finalizar» para cerrar la figura.'
-      : 'Toca o haz clic en el mapa para marcar cada esquina (mínimo 3). No se puede cruzar las zonas en rojo (vías principales, ríos y lagos).',
+      : 'Toca o haz clic en el mapa para marcar cada esquina (mínimo 3). No se puede cruzar avenidas, jirones, pasajes, parques, ríos, lagos ni espacios privados.',
     listo: 'Arrastra los vértices para ajustar el contorno.',
   };
 
   return (
-    <div className={`map-card picker${modo === 'dibujando' ? ' dibujando' : ''}`}>
+    <>
+    {enUso && createPortal(<div ref={huecoRef} className="map-backdrop" aria-hidden="true" />, document.body)}
+    <div ref={cardRef} onPointerDownCapture={() => setEnUso(true)}
+      className={`map-card picker${modo === 'dibujando' ? ' dibujando' : ''}${enUso ? ' en-uso' : ''}`}>
       <div className="map-wrap" ref={wrapRef}>
         <div ref={el} className="map" />
         <BuscadorLugares onElegir={irA} onError={setSearchMsg} />
@@ -399,12 +428,21 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
           <button type="button" onClick={alternarPantallaCompleta} aria-label="Pantalla completa" aria-pressed={pantallaCompleta}
             title={pantallaCompleta ? 'Salir de pantalla completa' : 'Pantalla completa'}><Icon name="expand" /></button>
         </div>
-        <details className="zonas-leyenda">
-          <summary><i />Leyenda del mapa</summary>
+        <details className="zonas-leyenda" open>
+          <summary><Icon name="polygon" size={15} />Leyenda del mapa<b className="chevron" aria-hidden="true" /></summary>
+          <div className="leyenda-grupo">Terrenos</div>
           <ul>
-            <li><i className="rojo" />Vías principales, ríos y lagos: no se pueden cruzar.</li>
-            <li><i className="azul" />Terrenos ya registrados (línea continua).</li>
-            <li><i className="nuevo" />Tu terreno (línea discontinua).</li>
+            <li><i className="nuevo" /><span><b>Tu terreno</b>Contorno que estás dibujando (línea discontinua).</span></li>
+            <li><i className="registrada" /><span><b>Terreno registrado</b>Ya ofertado por otra persona (línea continua).</span></li>
+          </ul>
+          <div className="leyenda-grupo">Zonas donde no se puede dibujar</div>
+          <ul>
+            <li><i className="privado" /><span><b>Espacios privados</b>Universidades, colegios, hospitales y locales comerciales o industriales. No se pueden ocupar.</span></li>
+            <li><i className="via" /><span><b>Avenidas, jirones, pasajes, parques, ríos y lagos</b>No se pueden cruzar ni ocupar. El mapa no las marca: si intentas dibujar encima verás un aviso.</span></li>
+          </ul>
+          <div className="leyenda-grupo">Avisos</div>
+          <ul>
+            <li><i className="problema" /><span><b>Zona con problema</b>Parte del contorno que incumple una regla.</span></li>
           </ul>
         </details>
         <SelectorCapas capa={capa} onChange={cambiarCapa} disabled={modo === 'dibujando' && puntos > 0} />
@@ -439,9 +477,10 @@ export default function PolygonPicker({ onChange, onValidacion, initial = null }
           <button type="button" className="btn small outline" onClick={deshacer} disabled={modo !== 'dibujando' || puntos < 1}
             title="Quitar la última esquina (Retroceso o Ctrl+Z)">Deshacer punto</button>
           <button type="button" className="btn small" onClick={finalizar} disabled={modo !== 'dibujando' || puntos < 3}>Finalizar</button>
-          <button type="button" className="btn small outline" onClick={redibujar} disabled={modo === 'idle' && area === null}>Borrar y redibujar</button>
+          <button type="button" className="btn small outline" onClick={redibujar} disabled={modo === 'idle' && area === null}>Borrar</button>
         </div>
       </div>
     </div>
+    </>
   );
 }

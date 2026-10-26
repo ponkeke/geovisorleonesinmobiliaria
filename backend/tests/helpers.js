@@ -35,7 +35,7 @@ const desplazar = (poligono, n) => ({
   coordinates: poligono.coordinates.map((anillo) => anillo.map(([lng, lat]) => [lng + n * 0.0015, lat])),
 });
 
-const limpiar = () => (creados = 0, pool.query(`TRUNCATE vias_osm, puntos_interes, decisiones_adquisicion, puntajes_viabilidad, informacion_financiera,
+const limpiar = () => (creados = 0, pool.query(`TRUNCATE archivos_tecnicos, vias_osm, puntos_interes, decisiones_adquisicion, puntajes_viabilidad, informacion_financiera,
   situaciones_legales, criterios_tecnicos, terrenos_candidatos, ofertas_terreno RESTART IDENTITY CASCADE`));
 
 // Crea una oferta válida y devuelve { id (id_terreno), area }.

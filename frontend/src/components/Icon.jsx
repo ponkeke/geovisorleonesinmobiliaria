@@ -23,6 +23,11 @@ const P = {
   compare: <><circle cx="6" cy="6" r="2.5" /><circle cx="18" cy="18" r="2.5" /><path d="M8.5 6H14a3 3 0 010 6h-4a3 3 0 000 6h5.5" /></>,
   tag: <><path d="M3 12V4h8l10 10-8 8L3 12z" /><circle cx="7.5" cy="8.5" r="1.2" /></>,
   logout: <path d="M15 4h4a1 1 0 011 1v14a1 1 0 01-1 1h-4M10 8l-4 4 4 4M6 12h10" />,
+  more: <><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none" /></>,
+  mail: <><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 6 9 7 9-7" /></>,
+  instagram: <><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".7" fill="currentColor" /></>,
+  tiktok: <path d="M14 3h3c.2 2.7 1.6 4.2 4 4.5v3.2a9.2 9.2 0 0 1-4-1.4v6.9a6 6 0 1 1-6-6v3.2a2.8 2.8 0 1 0 2.8 2.8V3Z" fill="currentColor" stroke="none" />,
+  facebook: <path d="M13.5 21v-8.2h2.8l.4-3.2h-3.2V7.5c0-.9.3-1.6 1.6-1.6h1.7V3c-.3 0-1.4-.1-2.6-.1-2.6 0-4.4 1.6-4.4 4.5v2.2H7v3.2h2.8V21Z" fill="currentColor" stroke="none" />,
 };
 
 export default function Icon({ name, size = 18, className = '' }) {

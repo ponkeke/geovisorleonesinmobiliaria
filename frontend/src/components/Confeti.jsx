@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { PALETA } from '../theme.js';
 
-const COLORES = ['#2b4a3e', '#2f7a5a', '#8fb39f', '#c9b98a', '#e3ece6'];
+const COLORES = [PALETA.amarillo, PALETA.naranja, PALETA.negro, PALETA.blanco];
 const PIEZAS = 28;
 const DURACION_MS = 4500;
 

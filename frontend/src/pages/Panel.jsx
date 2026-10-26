@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Icon from '../components/Icon.jsx';
 import TerrenosMap from '../components/TerrenosMap.jsx';
 import DetailPanel from '../components/DetailPanel.jsx';
+import CompararTerrenos from '../components/CompararTerrenos.jsx';
 import { NIVELES, nivelViabilidad, formatM2 } from '../components/mapConfig.js';
-import { listarTerrenos, getTerreno, getCercanos, getUsuario, logout, errorMessage } from '../services/api.js';
+import { listarTerrenos, getTerreno, getCercanos, getAcceso, getUsuario, errorMessage } from '../services/api.js';
+import { useSessionTransition } from '../components/SessionTransition.jsx';
 import { codigoTerreno, formatSolesCorto } from '../utils/format.js';
 
 export default function Panel() {
@@ -15,14 +16,19 @@ export default function Panel() {
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const [cercanos, setCercanos] = useState({ cargando: false, data: null, error: '' });
   const [intentoCercanos, setIntentoCercanos] = useState(0);
+  const [acceso, setAcceso] = useState({ cargando: false, data: null, error: '' });   // vía de frente (solo Área Técnica)
+  const [comparando, setComparando] = useState(false);   // ventana «Comparar candidatos» (Gerencia)
+  const [resaltadoId, setResaltadoId] = useState(null);   // lugar cercano con el mouse encima en la lista
   const [filtro, setFiltro] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
+  const { cerrarSesion } = useSessionTransition();
   const usuario = getUsuario();
+  const esTecnica = usuario?.rol === 'tecnica';   // el Área Técnica no ve el puntaje de viabilidad
 
   const manejar = useCallback((e) => {
-    if (e.response?.status === 401) { logout(); navigate('/login'); } else setError(errorMessage(e));
-  }, [navigate]);
+    if (e.response?.status === 401) return cerrarSesion();
+    setError(errorMessage(e));
+  }, [cerrarSesion]);
 
   const cargarLista = useCallback(() => listarTerrenos().then(setTerrenos).catch(manejar), [manejar]);
   useEffect(() => { cargarLista(); }, [cargarLista]);
@@ -41,11 +47,23 @@ export default function Panel() {
     if (!selectedId) { setCercanos({ cargando: false, data: null, error: '' }); return undefined; }
     let activo = true;
     setCercanos({ cargando: true, data: null, error: '' });
+    setResaltadoId(null);
     getCercanos(selectedId)
       .then((data) => activo && setCercanos({ cargando: false, data, error: data.error || '' }))
       .catch(() => activo && setCercanos({ cargando: false, data: null, error: 'No se pudo consultar lugares cercanos' }));
     return () => { activo = false; };
   }, [selectedId, intentoCercanos]);
+
+  // Vía de frente del terreno (sugerencia para el criterio técnico y para ubicar el frente en las dimensiones).
+  useEffect(() => {
+    if (!selectedId || !esTecnica) { setAcceso({ cargando: false, data: null, error: '' }); return undefined; }
+    let activo = true;
+    setAcceso({ cargando: true, data: null, error: '' });
+    getAcceso(selectedId)
+      .then((data) => activo && setAcceso({ cargando: false, data, error: '' }))
+      .catch(() => activo && setAcceso({ cargando: false, data: null, error: 'No se pudo consultar la vía de acceso' }));
+    return () => { activo = false; };
+  }, [selectedId, esTecnica]);
 
   // Tras registrar un criterio o una decisión se refrescan lista (orden/puntaje) y detalle.
   const cambiado = async () => { await Promise.all([cargarLista(), cargarDetalle(selectedId)]); };
@@ -71,7 +89,7 @@ export default function Panel() {
             <h1>Candidatos</h1>
             {terrenos && <span className="count-chip">{terrenos.length} {terrenos.length === 1 ? 'terreno' : 'terrenos'}</span>}
           </div>
-          <p className="muted">Ordenados por puntaje de viabilidad, de mayor a menor.</p>
+          {!esTecnica && <p className="muted">Ordenados por puntaje de viabilidad, de mayor a menor.</p>}
           <div className="search-box">
             <Icon name="search" size={16} />
             <input placeholder="Buscar por ID o zona" value={filtro} onChange={(e) => setFiltro(e.target.value)} />
@@ -89,10 +107,12 @@ export default function Panel() {
                   onClick={() => setSelectedId(t.id_terreno)}
                 >
                   <div className="card-row">
-                    <span className="card-code"><i style={{ background: nivel.color }} />{codigoTerreno(t.id_terreno)}</span>
-                    <span className="card-score" style={{ color: nivel.color }}>
-                      {t.puntaje_total ?? '—'}{t.puntaje_total !== null && <small>/100</small>}
-                    </span>
+                    <span className="card-code">{!esTecnica && <i style={{ background: nivel.color }} />}{codigoTerreno(t.id_terreno)}</span>
+                    {!esTecnica && (
+                      <span className="card-score" style={{ color: nivel.textColor }}>
+                        {t.puntaje_total ?? '—'}{t.puntaje_total !== null && <small>/100</small>}
+                      </span>
+                    )}
                   </div>
                   <div className="card-place"><Icon name="pin" size={15} />{t.ubicacion_referencial}</div>
                   <div className="card-row muted">
@@ -111,18 +131,24 @@ export default function Panel() {
             <span className="muted">Selecciona un pin para revisar su evaluación</span>
           </div>
           <TerrenosMap terrenos={terrenos} selectedId={selectedId} onSelect={seleccionarDesdeMapa}
-            lugares={cercanos.data?.categorias} />
+            lugares={cercanos.data?.categorias} resaltadoId={resaltadoId}
+            ocultarViabilidad={['tecnica', 'legal', 'administrativa'].includes(usuario?.rol)}
+            cercanos={cercanos} onReintentarCercanos={() => setIntentoCercanos((n) => n + 1)} onResaltar={setResaltadoId} />
         </section>
 
         <aside className="col detail-col">
           {!selectedId && <p className="muted center-msg">Selecciona un terreno de la lista o del mapa para ver su evaluación.</p>}
           {selectedId && !detalle && <p className="muted center-msg">{cargandoDetalle ? 'Cargando…' : 'No se pudo cargar el detalle.'}</p>}
           {selectedId && detalle && (
-            <DetailPanel key={detalle.id_terreno} terreno={detalle} usuario={usuario} onChanged={cambiado} cercanos={cercanos}
-              onReintentarCercanos={() => setIntentoCercanos((n) => n + 1)} />
+            <DetailPanel key={detalle.id_terreno} terreno={detalle} usuario={usuario} onChanged={cambiado} cercanos={cercanos} acceso={esTecnica ? acceso : null}
+              onReintentarCercanos={() => setIntentoCercanos((n) => n + 1)} onResaltar={setResaltadoId}
+              onComparar={() => setComparando(true)} />
           )}
         </aside>
       </div>
+      {comparando && selectedId && terrenos && (
+        <CompararTerrenos terrenos={terrenos} idInicial={selectedId} onCerrar={() => setComparando(false)} />
+      )}
     </Layout>
   );
 }

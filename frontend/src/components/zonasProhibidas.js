@@ -1,18 +1,26 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import { HUANCAYO } from './mapConfig.js';
 
-// Zonas por las que no se puede dibujar: vías principales, ríos y lagos. Salen de las teselas de
-// Mapbox Streets (capas invisibles al cálculo, pero pintadas en rojo tenue), así valen en calle y satélite.
+// Zonas por las que no se puede dibujar: avenidas, jirones y pasajes, ríos, lagos, parques y espacios privados (universidades, hospitales y locales). Salen de las teselas de
+// Mapbox Streets (capas casi transparentes: bloquean el dibujo sin pintar el mapa), así valen en calle y satélite.
 const FUENTE = 'zonas-prohibidas';
-const ROJO = '#c0392b';
+const RESTRINGIDO = '#c0392b';
 const TOL_PX = 2;     // holgura de la consulta alrededor del cursor
 const PASO_PX = 5;    // separación entre muestras al revisar un lado
 // Ancho total (m) de la franja de cada clase; coincide con VIAS_ANCHOS_M del backend (regla R3).
-const ANCHO_VIA_M = { motorway: 16, trunk: 14, primary: 12, secondary: 10 };
+// Clases de Mapbox Streets: avenidas (primary/secondary/tertiary), jirones y calles (street, street_limited)
+// y pasajes (service).
+const ANCHO_VIA_M = {
+  motorway: 16, trunk: 14, primary: 12, secondary: 10, tertiary: 8, street: 6, street_limited: 5, service: 4,
+};
 const ANCHO_RIO_M = { river: 10, canal: 5 };
-const CAPAS = ['zp-agua', 'zp-rios', 'zp-vias'];
+// Espacios privados: terrenos de colegios y universidades, hospitales, zonas comerciales e industriales (landuse) y los
+// edificios de esos usos (building.type, que sigue la etiqueta building de OSM).
+const USOS_PRIVADOS = ['school', 'hospital', 'commercial_area', 'industrial'];
+const EDIFICIOS_PRIVADOS = ['university', 'college', 'school', 'kindergarten', 'hospital', 'commercial', 'retail', 'supermarket', 'industrial', 'warehouse'];
+const CAPAS = ['zp-agua', 'zp-rios', 'zp-vias', 'zp-parques', 'zp-areas-protegidas', 'zp-privados', 'zp-edificios-privados'];
 
-export const MENSAJE_ZONA = 'No se puede dibujar sobre una vía principal, un río o un lago (zonas en rojo).';
+export const MENSAJE_ZONA = 'No se puede dibujar sobre avenidas, jirones, pasajes, parques, ríos, lagos ni espacios privados (universidades, hospitales o locales).';
 
 // Píxeles por metro en zoom 10 a la latitud de trabajo; se duplica con cada nivel de zoom.
 const PX_POR_M_Z10 = 1024 / (78271.517 * Math.cos((HUANCAYO[1] * Math.PI) / 180));
@@ -27,12 +35,21 @@ export function instalarZonas(map, antesDe) {
   if (!map.getSource(FUENTE)) map.addSource(FUENTE, { type: 'vector', url: 'mapbox://mapbox.mapbox-streets-v8' });
   const antes = map.getLayer(antesDe) ? antesDe : undefined;
   const add = (capa) => { if (!map.getLayer(capa.id)) map.addLayer({ source: FUENTE, ...capa }, antes); };
-  add({ id: 'zp-agua', type: 'fill', 'source-layer': 'water', paint: { 'fill-color': ROJO, 'fill-opacity': 0.22 } });
+  // Parques (landuse) y áreas protegidas (landuse_overlay), casi transparentes: bloquean sin pintar el mapa.
+  add({ id: 'zp-parques', type: 'fill', 'source-layer': 'landuse', filter: ['==', ['get', 'class'], 'park'],
+    paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.01 } });
+  add({ id: 'zp-areas-protegidas', type: 'fill', 'source-layer': 'landuse_overlay', filter: ['==', ['get', 'class'], 'national_park'],
+    paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.01 } });
+  add({ id: 'zp-privados', type: 'fill', 'source-layer': 'landuse', filter: ['match', ['get', 'class'], USOS_PRIVADOS, true, false],
+    paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.01 } });
+  add({ id: 'zp-edificios-privados', type: 'fill', 'source-layer': 'building', filter: ['match', ['get', 'type'], EDIFICIOS_PRIVADOS, true, false],
+    paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.01 } });
+  add({ id: 'zp-agua', type: 'fill', 'source-layer': 'water', paint: { 'fill-color': RESTRINGIDO, 'fill-opacity': 0.01 } });
   add({ id: 'zp-rios', type: 'line', 'source-layer': 'waterway', filter: claseEn(ANCHO_RIO_M),
-    layout: { 'line-cap': 'round' }, paint: { 'line-color': ROJO, 'line-opacity': 0.3, 'line-width': anchoPx(ANCHO_RIO_M) } });
+    layout: { 'line-cap': 'round' }, paint: { 'line-color': RESTRINGIDO, 'line-opacity': 0.01, 'line-width': anchoPx(ANCHO_RIO_M) } });
   add({ id: 'zp-vias', type: 'line', 'source-layer': 'road',
     filter: ['all', ['==', ['geometry-type'], 'LineString'], claseEn(ANCHO_VIA_M), ['!=', ['get', 'structure'], 'tunnel']],
-    layout: { 'line-cap': 'butt' }, paint: { 'line-color': ROJO, 'line-opacity': 0.3, 'line-width': anchoPx(ANCHO_VIA_M) } });
+    layout: { 'line-cap': 'butt' }, paint: { 'line-color': RESTRINGIDO, 'line-opacity': 0.01, 'line-width': anchoPx(ANCHO_VIA_M) } });   // casi transparente: bloquea sin pintar la vía
 }
 
 // p: punto en píxeles { x, y }.

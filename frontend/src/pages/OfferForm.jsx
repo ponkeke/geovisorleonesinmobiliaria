@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Icon from '../components/Icon.jsx';
 import PolygonPicker from '../components/PolygonPicker.jsx';
-import imagenMapa from '../assets/mapa.png';
+import GuiaMapa from '../components/GuiaMapa.jsx';
+import leonAside from '../assets/guia/leon3.png';
 import { hasMapboxToken } from '../components/mapConfig.js';
 import { enviarOferta, errorMessage } from '../services/api.js';
 import { centroide, direccionDesde } from '../utils/geocodificar.js';
@@ -53,6 +54,7 @@ export default function OfferForm() {
   const [sending, setSending] = useState(false);
   const [estadoPoligono, setEstadoPoligono] = useState('ninguno');   // ninguno | validando | ok | error | nd
   const [foco, setFoco] = useState(null);
+  const [guiaVista, setGuiaVista] = useState(false);   // la guía del mapa se muestra una vez por registro
   const refs = useRef({});
   const ubicacionEditada = useRef(false);   // true si el usuario escribió la dirección a mano
   const [sugerencia, setSugerencia] = useState('');   // '' | cargando | ok | fallo
@@ -198,6 +200,19 @@ export default function OfferForm() {
       <Stepper paso={paso} />
       <main className="form-page">
         {paso === 1 && (
+          <div className="oferta-grid">
+            <aside className="oferta-aside" aria-label="Sobre el proceso">
+              <div className="oferta-aside-texto">
+                <span className="eyebrow">OFRECE TU TERRENO</span>
+                <h2>Tu terreno puede ser nuestro próximo proyecto.</h2>
+                <ul>
+                  <li><span><Icon name="sparkle" size={18} /></span>Sin crear cuenta, en pocos minutos.</li>
+                  <li><span><Icon name="pin" size={18} /></span>Delimita tu terreno directamente en el mapa.</li>
+                  <li><span><Icon name="phone" size={18} /></span>Nuestro equipo revisará tu propuesta y te contactará.</li>
+                </ul>
+              </div>
+              <img className="oferta-leon" src={leonAside} alt="" aria-hidden="true" />
+            </aside>
           <form onSubmit={siguiente} className="form-card" noValidate>
             <span className="eyebrow plain">PASO 1 DE 2</span>
             <h1>Datos generales</h1>
@@ -255,18 +270,13 @@ export default function OfferForm() {
               <button className="btn">Siguiente <Icon name="arrow" size={16} /></button>
             </div>
           </form>
+          </div>
         )}
 
-        {paso === 2 && (
+        {paso === 2 && !guiaVista && <GuiaMapa onTerminar={() => setGuiaVista(true)} />}
+
+        {paso === 2 && guiaVista && (
           <form onSubmit={submit} className="loc-grid" noValidate>
-            <div className="loc-side">
-              <div className="loc-texto">
-              <span className="eyebrow plain">PASO 2 DE 2</span>
-              <h1>Ubicación del terreno</h1>
-              <p className="sub">Señala el área exacta que deseas ofrecer.</p>
-              </div>
-              <img className="loc-imagen" src={imagenMapa} alt="" width="180" height="180" />
-            </div>
             <div className="loc-direccion">
             <label className="field">Dirección o referencia
               <span className="input-affix left">

@@ -1,10 +1,10 @@
 import { Link } from 'react-router-dom';
+import logoLeones from '../assets/logo-leones.png';
 
 export default function Logo({ to = '/', light = false }) {
   return (
     <Link to={to} className={`logo${light ? ' light' : ''}`}>
-      <span className="logo-mark">L</span>
-      <span className="logo-text"><b>Leones</b><small>GRUPO INMOBILIARIA</small></span>
+      <img className="logo-img" src={logoLeones} alt="Leones Grupo Inmobiliario" />
     </Link>
   );
 }

@@ -12,7 +12,7 @@ function armar(filas, radio, origen, error = null) {
     clave: c.clave,
     etiqueta: c.etiqueta,
     lugares: filas.filter((f) => f.categoria === c.clave).slice(0, LIMITE_POR_CATEGORIA).map((f) => ({
-      nombre: f.nombre, distancia_m: r1(f.distancia_m), lat: f.lat, lng: f.lng,
+      id: f.id_osm, nombre: f.nombre, distancia_m: r1(f.distancia_m), lat: f.lat, lng: f.lng, trazo: f.trazo || null, area: f.area || null,
     })),
   }));
   const via = categorias.find((c) => c.clave === CATEGORIA_VIA)?.lugares[0];

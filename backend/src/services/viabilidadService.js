@@ -30,8 +30,10 @@ function puntajeLegal({ ruta_legal }) {
 // valor de referencia FIJO (no hay histórico todavía; iteración futura).
 //   <= referencia -> 100; baja linealmente hasta 0 en 2x la referencia.
 // Se configura con la variable de entorno PRECIO_M2_REFERENCIA (por defecto 170).
+const referenciaPrecioM2 = () => Number(process.env.PRECIO_M2_REFERENCIA) || 170;
+
 function puntajeFinanciero({ precio_ofertado, costos_adquisicion }, area) {
-  const ref = Number(process.env.PRECIO_M2_REFERENCIA) || 170;
+  const ref = referenciaPrecioM2();
   const a = Number(area);
   if (!a || a <= 0) return 0;
   const porM2 = (Number(precio_ofertado) + Number(costos_adquisicion || 0)) / a;
@@ -58,4 +60,4 @@ function calcular({ criterios, legal, financiera, area }) {
   };
 }
 
-module.exports = { calcular };
+module.exports = { calcular, referenciaPrecioM2 };

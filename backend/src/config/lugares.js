@@ -2,11 +2,18 @@
 //   clave: identificador guardado en puntos_interes.categoria
 //   etiqueta: nombre mostrado en la interfaz
 //   tags: etiquetas OSM que debe cumplir el elemento ({ etiqueta: [valores válidos] })
-//   linea: true si el lugar es una vía (se guarda su punto más cercano al terreno)
+//   linea: true si el lugar es una vía (se guarda su punto más cercano al terreno y su trazo)
+//   area: true si el lugar es una zona (parque): se guarda su contorno para dibujarlo completo
 const CATEGORIAS = [
   { clave: 'via_principal', etiqueta: 'Vía principal', tags: { highway: ['trunk', 'primary', 'secondary'] }, linea: true },
   { clave: 'colegio', etiqueta: 'Colegios', tags: { amenity: ['school'] } },
   { clave: 'universidad', etiqueta: 'Universidades', tags: { amenity: ['university', 'college'] } },
+  { clave: 'tienda', etiqueta: 'Tiendas', tags: { shop: ['supermarket', 'convenience', 'mall', 'department_store'] } },
+  { clave: 'restaurante', etiqueta: 'Restaurantes', tags: { amenity: ['restaurant', 'fast_food'] } },
+  { clave: 'parque', etiqueta: 'Parques', tags: { leisure: ['park'] }, area: true },
+  { clave: 'salud', etiqueta: 'Hospitales y postas', tags: { amenity: ['hospital', 'clinic'] } },
+  { clave: 'mercado', etiqueta: 'Mercados', tags: { amenity: ['marketplace'] } },
+  { clave: 'banco', etiqueta: 'Bancos', tags: { amenity: ['bank'] } },
 ];
 
 const CATEGORIA_VIA = 'via_principal';
@@ -21,8 +28,8 @@ const opciones = () => ({
   url: process.env.OVERPASS_URL || 'https://overpass-api.de/api/interpreter',
   urlAlt: process.env.OVERPASS_URL_ALT || '',
   userAgent: process.env.OVERPASS_USER_AGENT || 'GeovisorLeones/1.0 (proyecto de tesis, Universidad Continental)',
-  radio: entero(process.env.OVERPASS_RADIO_M, 2000),
-  timeoutMs: entero(process.env.OVERPASS_TIMEOUT_MS, 10000),
+  radio: entero(process.env.OVERPASS_RADIO_M, 500),
+  timeoutMs: entero(process.env.OVERPASS_TIMEOUT_MS, 30000),
   reintentos: process.env.OVERPASS_REINTENTOS ? Math.max(0, Math.floor(Number(process.env.OVERPASS_REINTENTOS)) || 0) : 2,
   esperaMs: entero(process.env.OVERPASS_REINTENTO_ESPERA_MS, 1000),
 });
