@@ -20,7 +20,7 @@ exports.validarPoligono = async (geojson) => {
   if (!row.valido) {
     const cruce = /^Self-intersection|^Ring Self-intersection/.test(row.motivo);
     throw { status: 400, campo: 'poligono', message: cruce
-      ? 'Polígono inválido: los lados se cruzan entre sí. Redibújelo sin cruzar líneas'
+      ? 'Polígono inválido: los lados se cruzan entre sí'
       : `Polígono inválido: ${row.motivo}` };
   }
   if (!(row.area > 0)) throw { status: 400, campo: 'poligono', message: 'El polígono no tiene área' };

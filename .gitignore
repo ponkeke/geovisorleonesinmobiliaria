@@ -7,3 +7,8 @@ backend/coverage/
 
 # Fotos y reportes subidos por el Área Técnica
 backend/uploads/
+
+# Cypress (videos y capturas de las ejecuciones)
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+frontend/cypress/downloads/

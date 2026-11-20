@@ -4,6 +4,7 @@ import CriterioForm, { TIPOS_VIA, SUPERFICIES, SERVICIOS, ESTADOS_TRAMITE, CARGA
 import ResumenFinanciero from './ResumenFinanciero.jsx';
 import ArchivosVisita from './ArchivosVisita.jsx';
 import UbicacionApoyo from './UbicacionApoyo.jsx';
+import LevantamientoTopografico from './LevantamientoTopografico.jsx';
 import { NIVELES, nivelViabilidad, formatM2 } from './mapConfig.js';
 import { registrarDecision, errorMessage } from '../services/api.js';
 import { codigoTerreno, formatSoles, ESTADOS, capitalizar } from '../utils/format.js';
@@ -192,10 +193,12 @@ export default function DetailPanel({ terreno: t, usuario, onChanged, cercanos, 
       {!esAdmin && (
       <Criterio
         titulo="ÁREA" puntaje={false} pendiente={!t.area}
-        valor={formatM2(t.area)} detalle={['Calculada del polígono dibujado']}
+        valor={formatM2(t.area)}
+        detalle={['Calculada del contorno del lote elegido', ...(t.levantamiento ? [`Medida por el ingeniero: ${formatM2(t.levantamiento.area_utm)} (UTM)`] : [])]}
         form={{ show: false }}
       />
       )}
+      {!esAdmin && <LevantamientoTopografico terreno={t} puedeEditar={esTecnica && abierto} onChanged={onChanged} />}
       <Criterio
         titulo="CRITERIO TÉCNICO" pendiente={!ct} puntaje={esTecnica ? false : det?.puntaje_tecnico} soloEstado={esLegal || esAdmin}
         valor={ct ? `${ct.distancia_via_principal} m a vía principal` : ''}

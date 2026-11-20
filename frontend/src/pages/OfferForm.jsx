@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout.jsx';
 import Icon from '../components/Icon.jsx';
+import PredioPicker from '../components/PredioPicker.jsx';
 import PolygonPicker from '../components/PolygonPicker.jsx';
 import GuiaMapa from '../components/GuiaMapa.jsx';
 import leonAside from '../assets/guia/leon3.png';
@@ -49,7 +50,9 @@ export default function OfferForm() {
   const [form, setForm] = useState(initial);
   const [errors, setErrors] = useState({});
   const [precioEditando, setPrecioEditando] = useState(false);
-  const [poligono, setPoligono] = useState(null); // { geometry, area }
+  // Terreno: lote del catastro { geometry, area, sello, etiqueta, fuente } o contorno dibujado { geometry, area }.
+  const [poligono, setPoligono] = useState(null);
+  const [metodo, setMetodo] = useState('catastro');   // catastro | dibujo
   const [errorGeneral, setErrorGeneral] = useState('');
   const [sending, setSending] = useState(false);
   const [estadoPoligono, setEstadoPoligono] = useState('ninguno');   // ninguno | validando | ok | error | nd
@@ -112,7 +115,10 @@ export default function OfferForm() {
     const ubic = VALIDADORES.ubicacion_referencial(form.ubicacion_referencial);
     setError('ubicacion_referencial', ubic.error);
     if (ubic.error) { refs.current.ubicacion_referencial?.focus(); return; }
-    if (!poligono) { setError('poligono', 'Dibuje el polígono del terreno en el mapa'); return; }
+    if (!poligono) {
+      setError('poligono', metodo === 'dibujo' ? 'Dibuje el contorno de su terreno en el mapa' : 'Elija su lote en el mapa haciendo clic sobre un predio');
+      return;
+    }
 
     // Los textos ya fueron normalizados al avanzar; se revalidan por seguridad.
     const nombre = validarNombre(form.nombre_propietario);
@@ -132,6 +138,7 @@ export default function OfferForm() {
         precio_ofertado: precio.valor,
         descripcion: descripcion.valor,
         poligono: poligono.geometry,
+        ...(poligono.sello && { predio_sello: poligono.sello }),   // lote del catastro: el servidor comprueba el sello
       });
       navigate('/confirmacion', {
         state: { oferta: { id: registrada.id_oferta, area: registrada.area, ubicacion: ubic.valor, precio: precio.valor, poligono: poligono.geometry } },
@@ -149,8 +156,8 @@ export default function OfferForm() {
     }
   };
 
-  // Dirección sugerida desde el centro del polígono (reverse geocoding), con espera de 600 ms.
-  // Si el usuario escribió la dirección no se sobrescribe; solo se sugiere de nuevo tras borrar y redibujar.
+  // Dirección sugerida desde el centro del lote elegido (reverse geocoding), con espera de 600 ms.
+  // Si el usuario escribió la dirección no se sobrescribe; solo se sugiere de nuevo tras cambiar de lote.
   useEffect(() => {
     if (!poligono) { ubicacionEditada.current = false; setSugerencia(''); return undefined; }
     if (ubicacionEditada.current) return undefined;
@@ -184,6 +191,15 @@ export default function OfferForm() {
     if (p) setError('poligono', undefined);
   };
 
+  // Cambiar entre elegir el lote y dibujarlo descarta el terreno anterior (cada mapa maneja el suyo).
+  const cambiarMetodo = (m) => {
+    if (m === metodo) return;
+    setMetodo(m);
+    setPoligono(null);
+    setEstadoPoligono('ninguno');
+    setError('poligono', undefined);
+  };
+
   // Props comunes de accesibilidad para un campo con error en línea.
   const a11y = (name) => ({
     ref: (el) => { refs.current[name] = el; },
@@ -207,7 +223,7 @@ export default function OfferForm() {
                 <h2>Tu terreno puede ser nuestro próximo proyecto.</h2>
                 <ul>
                   <li><span><Icon name="sparkle" size={18} /></span>Sin crear cuenta, en pocos minutos.</li>
-                  <li><span><Icon name="pin" size={18} /></span>Delimita tu terreno directamente en el mapa.</li>
+                  <li><span><Icon name="pin" size={18} /></span>Elige tu lote en el mapa con un clic o dibuja tu terreno.</li>
                   <li><span><Icon name="phone" size={18} /></span>Nuestro equipo revisará tu propuesta y te contactará.</li>
                 </ul>
               </div>
@@ -295,7 +311,15 @@ export default function OfferForm() {
               {!hasMapboxToken && <p className="error">No se puede enviar la oferta sin el mapa (falta el token de Mapbox).</p>}
             </div>
             <div className="loc-map">
-              <PolygonPicker onChange={onPoligono} onValidacion={setEstadoPoligono} initial={poligono?.geometry} />
+              <div className="metodo-terreno" role="group" aria-label="Cómo indicar tu terreno">
+                <button type="button" className={metodo === 'catastro' ? 'activo' : ''} aria-pressed={metodo === 'catastro'}
+                  onClick={() => cambiarMetodo('catastro')}><Icon name="pin" size={16} />Elegir lote del catastro</button>
+                <button type="button" className={metodo === 'dibujo' ? 'activo' : ''} aria-pressed={metodo === 'dibujo'}
+                  onClick={() => cambiarMetodo('dibujo')}><Icon name="polygon" size={16} />Dibujar mi terreno</button>
+              </div>
+              {metodo === 'catastro'
+                ? <PredioPicker key="catastro" onChange={onPoligono} onValidacion={setEstadoPoligono} initial={poligono} />
+                : <PolygonPicker key="dibujo" onChange={onPoligono} onValidacion={setEstadoPoligono} initial={poligono?.geometry} />}
               <Err name="poligono" />
             </div>
             <div className="form-actions loc-actions">
@@ -303,7 +327,7 @@ export default function OfferForm() {
               <span>
                 <button type="button" className="btn secondary" onClick={() => setPaso(1)}>Atrás</button>{' '}
                 <button className="btn" disabled={sending || !hasMapboxToken || estadoPoligono === 'error' || estadoPoligono === 'validando'}
-                  title={estadoPoligono === 'error' ? 'Corrija el contorno del terreno para poder enviar' : undefined}>
+                  title={estadoPoligono === 'error' ? (metodo === 'dibujo' ? 'Corrija el contorno del terreno para poder enviar' : 'Elija otro lote para poder enviar') : undefined}>
                   {sending ? 'Enviando…' : <>Enviar oferta <Icon name="arrow" size={16} /></>}
                 </button>
               </span>

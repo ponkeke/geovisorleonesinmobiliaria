@@ -3,6 +3,7 @@ import Layout from '../components/Layout.jsx';
 import Icon from '../components/Icon.jsx';
 import TerrenosMap from '../components/TerrenosMap.jsx';
 import DetailPanel from '../components/DetailPanel.jsx';
+import LoteCatastroPanel from '../components/LoteCatastroPanel.jsx';
 import CompararTerrenos from '../components/CompararTerrenos.jsx';
 import { NIVELES, nivelViabilidad, formatM2 } from '../components/mapConfig.js';
 import { listarTerrenos, getTerreno, getCercanos, getAcceso, getUsuario, errorMessage } from '../services/api.js';
@@ -17,6 +18,7 @@ export default function Panel() {
   const [cercanos, setCercanos] = useState({ cargando: false, data: null, error: '' });
   const [intentoCercanos, setIntentoCercanos] = useState(0);
   const [acceso, setAcceso] = useState({ cargando: false, data: null, error: '' });   // vía de frente (solo Área Técnica)
+  const [lote, setLote] = useState(null);   // lote del catastro elegido con un clic en el mapa: { estado, datos?, mensaje? }
   const [comparando, setComparando] = useState(false);   // ventana «Comparar candidatos» (Gerencia)
   const [resaltadoId, setResaltadoId] = useState(null);   // lugar cercano con el mouse encima en la lista
   const [filtro, setFiltro] = useState('');
@@ -64,6 +66,10 @@ export default function Panel() {
       .catch(() => activo && setAcceso({ cargando: false, data: null, error: 'No se pudo consultar la vía de acceso' }));
     return () => { activo = false; };
   }, [selectedId, esTecnica]);
+
+  // El panel derecho muestra un terreno o un lote del catastro, no ambos a la vez.
+  useEffect(() => { if (selectedId) setLote(null); }, [selectedId]);
+  const elegirLote = (l) => { setLote(l); setSelectedId(null); };
 
   // Tras registrar un criterio o una decisión se refrescan lista (orden/puntaje) y detalle.
   const cambiado = async () => { await Promise.all([cargarLista(), cargarDetalle(selectedId)]); };
@@ -132,12 +138,15 @@ export default function Panel() {
           </div>
           <TerrenosMap terrenos={terrenos} selectedId={selectedId} onSelect={seleccionarDesdeMapa}
             lugares={cercanos.data?.categorias} resaltadoId={resaltadoId}
+            levantamiento={detalle?.id_terreno === selectedId ? detalle.levantamiento?.geometria : null}
             ocultarViabilidad={['tecnica', 'legal', 'administrativa'].includes(usuario?.rol)}
-            cercanos={cercanos} onReintentarCercanos={() => setIntentoCercanos((n) => n + 1)} onResaltar={setResaltadoId} />
+            cercanos={cercanos} onReintentarCercanos={() => setIntentoCercanos((n) => n + 1)} onResaltar={setResaltadoId}
+            onLote={elegirLote} loteActivo={!!lote} />
         </section>
 
         <aside className="col detail-col">
-          {!selectedId && <p className="muted center-msg">Selecciona un terreno de la lista o del mapa para ver su evaluación.</p>}
+          {lote && <LoteCatastroPanel lote={lote} onCerrar={() => setLote(null)} />}
+          {!selectedId && !lote && <p className="muted center-msg">Selecciona un terreno de la lista o del mapa para ver su evaluación.</p>}
           {selectedId && !detalle && <p className="muted center-msg">{cargandoDetalle ? 'Cargando…' : 'No se pudo cargar el detalle.'}</p>}
           {selectedId && detalle && (
             <DetailPanel key={detalle.id_terreno} terreno={detalle} usuario={usuario} onChanged={cambiado} cercanos={cercanos} acceso={esTecnica ? acceso : null}

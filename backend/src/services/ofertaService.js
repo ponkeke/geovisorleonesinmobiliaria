@@ -1,13 +1,15 @@
 const ofertaModel = require('../models/ofertaModel');
 const v = require('../validators/ofertaValidator');
 const validacionPoligono = require('./validacionPoligonoService');
+const selloPredio = require('./selloPredio');
+const { soloPredios } = require('../config/catastro');
 
 const bad = (message) => ({ status: 400, campo: 'poligono', message });
 
 // Acepta un Feature o una geometría GeoJSON y devuelve la geometría Polygon.
 // Revisa forma y rangos antes de pasar a PostGIS (que valida topología con ST_IsValid).
 function extraerPoligono(input) {
-  if (!input || typeof input !== 'object') throw bad('Debe dibujar el polígono del terreno');
+  if (!input || typeof input !== 'object') throw bad('Debe elegir el lote del terreno en el mapa');
   const g = input.type === 'Feature' ? input.geometry : input;
   if (!g || g.type !== 'Polygon' || !Array.isArray(g.coordinates)) {
     throw bad('La geometría debe ser un único polígono');
@@ -35,6 +37,16 @@ exports.registrar = async (b) => {
     precio_ofertado: v.precio(b.precio_ofertado),
     descripcion: v.descripcion(b.descripcion),
   };
+
+  // El terreno es un predio del catastro elegido en el mapa: el sello prueba que el contorno lo entregó este servidor.
+  // Sin sello es un terreno dibujado a mano; se admite salvo que OFERTAS_SOLO_PREDIOS=true lo prohíba.
+  if (b.predio_sello !== undefined && b.predio_sello !== null) {
+    if (!selloPredio.verificar(b.poligono, b.predio_sello)) {
+      throw { status: 400, campo: 'poligono', message: 'El lote elegido no es válido o venció. Vuelva a elegirlo en el mapa.' };
+    }
+  } else if (soloPredios()) {
+    throw { status: 400, campo: 'poligono', message: 'Elija su lote en el mapa haciendo clic sobre un predio del catastro.' };
+  }
 
   // R1-R4 (el servidor es la autoridad); el aviso de vías no verificadas no bloquea el envío.
   const val = await validacionPoligono.validar(b.poligono);

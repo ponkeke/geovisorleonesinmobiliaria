@@ -12,7 +12,7 @@ import { CONTACTO, PROYECTOS, TERRENOS, PREGUNTAS } from '../data/inicio.js';
 
 const FEATURES = [
   ['sparkle', 'Proceso simple y sin cuenta', 'Completa tus datos en pocos minutos.'],
-  ['pin', 'Delimita tu terreno', 'Dibuja el contorno con precisión.'],
+  ['pin', 'Elige tu lote', 'Haz clic sobre tu predio en el mapa del catastro.'],
   ['phone', 'Nos pondremos en contacto', 'Nuestro equipo revisará tu propuesta.'],
 ];
 

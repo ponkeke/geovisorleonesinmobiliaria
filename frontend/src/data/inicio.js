@@ -27,9 +27,9 @@ export const TERRENOS = [
 
 export const PREGUNTAS = [
   { pregunta: '¿Necesito crear una cuenta para ofrecer mi terreno?', respuesta: 'No. El formulario es público y puedes enviar tu propuesta sin registrarte. El inicio de sesión está reservado para el equipo de Leones.' },
-  { pregunta: '¿Qué información necesito para completar el formulario?', respuesta: 'Tu nombre y apellido, un teléfono o correo, el precio solicitado y la ubicación de tu terreno. También deberás dibujar su contorno en el mapa. La descripción adicional es opcional.' },
+  { pregunta: '¿Qué información necesito para completar el formulario?', respuesta: 'Tu nombre y apellido, un teléfono o correo, el precio solicitado y la ubicación de tu terreno. También deberás elegir tu lote en el mapa, haciendo clic sobre el predio del catastro. La descripción adicional es opcional.' },
   { pregunta: '¿Puedo ofrecer un terreno en cualquier ubicación?', respuesta: 'Puedes indicar la ubicación de tu terreno en el formulario. Cada propuesta se revisa de manera individual según sus características y su potencial de adquisición.' },
-  { pregunta: '¿Cómo puedo conocer el área de mi terreno?', respuesta: 'Al dibujar el contorno en el mapa podrás consultar el área y ajustar sus vértices antes de enviar la propuesta.' },
+  { pregunta: '¿Cómo puedo conocer el área de mi terreno?', respuesta: 'Al elegir tu lote en el mapa verás su área, tomada del catastro, antes de enviar la propuesta.' },
   { pregunta: '¿Qué sucede después de enviar mi oferta?', respuesta: 'El equipo de Leones revisará la ubicación y las características del predio, junto con sus aspectos técnicos, legales y financieros. Tus datos de contacto permitirán comunicarnos contigo sobre la propuesta.' },
   { pregunta: '¿Enviar una propuesta garantiza la compra del terreno?', respuesta: 'La propuesta permite iniciar su evaluación. La adquisición depende de la revisión del equipo y de las características del terreno.' },
 ];

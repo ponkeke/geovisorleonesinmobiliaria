@@ -1,6 +1,8 @@
 const terrenoModel = require('../models/terrenoModel');
 const viabilidad = require('./viabilidadService');
 const archivoModel = require('../models/archivoModel');
+const levantamientoModel = require('../models/levantamientoModel');
+const { verificar } = require('./verificacionLevantamiento');
 
 const RUTAS = ['partida registral', 'desmembramiento', 'prescripción adquisitiva'];
 const TIPOS_VIA = ['avenida', 'jiron', 'calle', 'pasaje', 'trocha'];
@@ -36,15 +38,19 @@ exports.contornosPublicos = async () => ({
 
 exports.detalle = async (id) => {
   const terreno = await getTerrenoOr404(id);
-  const [criterios_tecnicos, situacion_legal, informacion_financiera, puntaje, decision, archivos] = await Promise.all([
+  const [criterios_tecnicos, situacion_legal, informacion_financiera, puntaje, decision, archivos, levantamiento] = await Promise.all([
     terrenoModel.latestCriterios(id),
     terrenoModel.latestLegal(id),
     terrenoModel.latestFinanciera(id),
     terrenoModel.latestPuntaje(id),
     terrenoModel.latestDecision(id),
     archivoModel.listar(id),
+    levantamientoModel.latest(id),
   ]);
-  return { ...terreno, criterios_tecnicos, situacion_legal, informacion_financiera, puntaje, decision, archivos, referencia_precio_m2: viabilidad.referenciaPrecioM2() };
+  return {
+    ...terreno, criterios_tecnicos, situacion_legal, informacion_financiera, puntaje, decision, archivos,
+    levantamiento: verificar(levantamiento), referencia_precio_m2: viabilidad.referenciaPrecioM2(),
+  };
 };
 
 // Calcula y guarda el puntaje. Falla (400) si falta alguno de los 3 criterios.
@@ -128,6 +134,8 @@ function fechaOpcional(valor, nombre) {
   if (d.getTime() > Date.now() + 24 * 3600 * 1000) throw bad(`${nombre} no puede ser futura`);
   return fecha;
 }
+
+exports.fechaOpcional = fechaOpcional;
 
 // Datos opcionales de la situación legal (partida, titularidad, cargas, trámite, documentos, revisión). Solo informativos.
 function detalleLegal(b) {

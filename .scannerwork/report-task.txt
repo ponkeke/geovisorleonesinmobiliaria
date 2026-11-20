@@ -1,0 +1,6 @@
+projectKey=geovisor-leones
+serverUrl=http://localhost:9000
+serverVersion=26.10.0.133078
+dashboardUrl=http://localhost:9000/dashboard?id=geovisor-leones
+ceTaskId=732da228-ae55-40d2-b743-a8fae74fc1c0
+ceTaskUrl=http://localhost:9000/api/ce/task?id=732da228-ae55-40d2-b743-a8fae74fc1c0

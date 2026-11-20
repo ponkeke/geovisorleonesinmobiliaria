@@ -247,6 +247,11 @@ input:focus, textarea:focus, select:focus { outline: 3px solid var(--accent-soft
 .loc-direccion label.field { margin: 0; }
 .loc-map .map { height: clamp(480px, 68vh, 760px); }
 .loc-map { min-width: 0; }
+.metodo-terreno { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; margin-bottom: 12px; background: var(--surface-muted); border: 1px solid var(--line); border-radius: 999px; max-width: 100%; }
+.metodo-terreno button { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--muted); font: 600 13px var(--sans); padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+.metodo-terreno button:hover { color: var(--ink); }
+.metodo-terreno button.activo { background: var(--accent); color: var(--ink); box-shadow: 0 1px 3px rgba(27, 27, 27, .15); }
+.metodo-terreno button:focus-visible { outline: 2px solid var(--accent-hover); outline-offset: 2px; }
 .loc-actions { grid-column: 1 / -1; }
 
 /* Mapas */
@@ -444,6 +449,8 @@ input[aria-invalid='true'], textarea[aria-invalid='true'] { border-color: var(--
 .capas button + button { border-left: 1px solid var(--line); }
 .capas button.activa { background: #2b4a3e; color: var(--white); }
 .capas button:disabled { opacity: .5; cursor: not-allowed; }
+.capas button.catastro { border-left: 2px solid var(--line); }
+.capas button.catastro.activa { background: #c2410c; }
 .capas button:focus-visible, .map-controls button:focus-visible { outline: 2px solid #2b4a3e; outline-offset: 2px; }
 .map-controls button[aria-pressed='true'] { background: #2b4a3e; color: var(--white); }
 .map-toast { position: absolute; left: 50%; top: 70px; transform: translateX(-50%); max-width: min(420px, calc(100% - 28px)); background: var(--accent-soft); border: 1px solid var(--orange); color: var(--ink); padding: 9px 14px; border-radius: 10px; box-shadow: var(--shadow); font-size: 13px; font-weight: 600; z-index: 3; pointer-events: none; }
@@ -1054,3 +1061,40 @@ html { scroll-behavior: smooth; }
   .comparar-lista { max-height: 160px; border-right: 0; border-bottom: 1px solid var(--line); }
 }
 @media (prefers-reduced-motion: reduce) { .comparar-fondo, .comparar { animation: none; } }
+
+/* ===== Levantamiento topográfico (plano del ingeniero) ===== */
+.legend i.leyenda-medido { width: 16px; height: 0; border-radius: 0; border-top: 3px dashed #111; background: none; }
+.lev .crit-value { margin-top: 2px; }
+.lev-croquis { display: block; width: 100%; height: auto; margin: 8px 0; background: var(--surface-muted); border-radius: 10px; }
+.lev-poligono { fill: rgba(255, 204, 0, .4); stroke: var(--ink); stroke-width: 2.5; stroke-linejoin: round; }
+.lev-vertice { fill: var(--ink); }
+.lev-etq-vertice { font: 700 11px var(--sans); fill: var(--ink); }
+.lev-etq-lado { font: 500 9.5px var(--sans); fill: var(--muted); }
+.lev-tabla { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 12px; font-variant-numeric: tabular-nums; }
+.lev-tabla th, .lev-tabla td { padding: 5px 6px; text-align: right; border-bottom: 1px solid var(--line); }
+.lev-tabla thead th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.lev-tabla tbody th { text-align: left; font-weight: 700; }
+.lev .fuera, .lev-medida .fuera, .crit-badge.lev-fuera { color: var(--danger); font-weight: 600; }
+.lev-medida .dentro { color: #2f7a5a; font-weight: 600; }
+.lev-alerta { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--orange-soft); font-size: 12px; color: var(--ink); }
+.lev-par { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 10px; }
+.lev-fila { display: grid; grid-template-columns: 26px minmax(0, 1fr) minmax(0, 1fr) 62px 22px; gap: 6px; align-items: center; margin-bottom: 6px; }
+.lev-fila input { min-width: 0; padding: 6px 8px; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.lev-fila b { font-size: 12px; }
+.lev-cab { font-size: 10px; letter-spacing: .05em; text-transform: uppercase; font-weight: 600; color: var(--muted); margin-bottom: 2px; }
+.lev-fila .archivo-x:disabled { opacity: .35; cursor: not-allowed; }
+.lev-acciones { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 10px; }
+.lev-pegar { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+.lev-pegar textarea { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; }
+.lev-medida { margin: 6px 0 10px; padding: 8px 10px; background: var(--accent-soft); border-radius: 8px; font-size: 12.5px; }
+
+/* Leyenda del selector de predios (catastro) */
+.zonas-leyenda li i.urbano { background: rgba(245, 158, 11, .15); border: 2px solid #f59e0b; }
+.zonas-leyenda li i.rural { background: rgba(147, 51, 234, .12); border: 2px solid #9333ea; }
+
+/* Panel de datos del catastro */
+.dl-catastro { margin: 0 0 8px; display: grid; gap: 6px; font-size: 13px; }
+.dl-catastro > div { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 10px; padding-bottom: 5px; border-bottom: 1px solid var(--line); }
+.dl-catastro dt { color: var(--muted); }
+.dl-catastro dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.calles-cat { margin: 0 0 8px; padding-left: 18px; font-size: 13px; font-weight: 600; }

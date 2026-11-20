@@ -5,6 +5,8 @@ const validacionPoligono = require('../services/validacionPoligonoService');
 const lugaresService = require('../services/lugaresService');
 const accesoService = require('../services/accesoService');
 const archivoService = require('../services/archivoService');
+const levantamientoService = require('../services/levantamientoService');
+const catastroService = require('../services/catastroService');
 
 // Envuelve un handler async para delegar errores a errorHandler.
 const h = (fn) => (req, res, next) => fn(req, res).catch(next);
@@ -44,8 +46,16 @@ exports.descargarArchivo = h(async (req, res) => {
   await new Promise((resolve, reject) => res.sendFile(abs, (err) => (err ? reject(err) : resolve())));
 });
 
+// Predio del catastro (urbano o rural) bajo un clic, con su contorno: lo usa el oferente para elegir su terreno. Público.
+exports.predioCatastro = h(async (req, res) => res.json(await catastroService.predio(req.query.lng, req.query.lat)));
+
+// Lote del catastro de COFOPRI bajo un punto del mapa (el adjudicatario solo lo ven Legal y Gerencia).
+exports.loteCatastro = h(async (req, res) => res.json(await catastroService.lote(req.query.lng, req.query.lat, req.user)));
+
 exports.criteriosTecnicos = h(async (req, res) =>
   res.status(201).json(await terrenoService.registrarCriteriosTecnicos(req.params.id, req.body, req.user)));
+exports.levantamiento = h(async (req, res) =>
+  res.status(201).json(await levantamientoService.registrar(req.params.id, req.body, req.user)));
 exports.situacionLegal = h(async (req, res) =>
   res.status(201).json(await terrenoService.registrarSituacionLegal(req.params.id, req.body, req.user)));
 exports.informacionFinanciera = h(async (req, res) =>

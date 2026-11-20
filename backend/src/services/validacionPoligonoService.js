@@ -9,7 +9,7 @@ const GRADOS_POR_METRO = 1 / 110000;
 
 // Estructura del GeoJSON (lo que no es un polígono utilizable es un 400, no un error de regla).
 function extraer(input, maxVertices) {
-  if (!input || typeof input !== 'object') throw bad('Debe dibujar el polígono del terreno');
+  if (!input || typeof input !== 'object') throw bad('Debe elegir el lote del terreno en el mapa');
   const g = input.type === 'Feature' ? input.geometry : input;
   if (!g || g.type !== 'Polygon' || !Array.isArray(g.coordinates) || !Array.isArray(g.coordinates[0])) {
     throw bad('La geometría debe ser un único polígono');
@@ -95,7 +95,7 @@ exports.validar = async (input) => {
   // R1 (forma): menos de 3 vértices distintos o puntos colineales (el contorno es una línea).
   const { distintos, areaPlana } = formaPlana(geom.coordinates[0]);
   if (distintos < 3 || areaPlana <= o.colinealEpsilon) {
-    errores.push({ regla: 'R1', mensaje: 'El contorno es una línea o tiene muy pocas esquinas. Dibuje un terreno con al menos 3 esquinas que formen una superficie.' });
+    errores.push({ regla: 'R1', mensaje: 'El contorno es una línea o tiene muy pocas esquinas. El terreno debe formar una superficie con al menos 3 esquinas.' });
     problemas.push(geom);
     return resultado();
   }
@@ -107,8 +107,8 @@ exports.validar = async (input) => {
   if (!base.valido) {
     const cruce = /Self-intersection/.test(base.motivo);
     errores.push({ regla: 'R2', mensaje: cruce
-      ? 'Los lados del contorno se cruzan entre sí. Redibújelo sin cruzar líneas.'
-      : `El contorno no es válido (${base.motivo}). Redibújelo.` });
+      ? 'Los lados del contorno se cruzan entre sí, por lo que no es utilizable. Elija otro lote.'
+      : `El contorno no es válido (${base.motivo}). Elija otro lote.` });
     if (base.punto_defecto) problemas.push(base.punto_defecto);
     return resultado();
   }

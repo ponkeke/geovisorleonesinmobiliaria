@@ -63,7 +63,11 @@ module.exports = async () => {
   if (!hay_fin) {
     await db.query(fs.readFileSync(path.join(__dirname, '../../../database/migrations/009_informacion_financiera_detalle.sql'), 'utf8'));
   }
-  await db.query(`TRUNCATE archivos_tecnicos, vias_osm, puntos_interes, decisiones_adquisicion, puntajes_viabilidad, informacion_financiera,
+  const { rows: [{ hay_levantamiento }] } = await db.query("SELECT to_regclass('public.levantamientos_topograficos') IS NOT NULL AS hay_levantamiento");
+  if (!hay_levantamiento) {
+    await db.query(fs.readFileSync(path.join(__dirname, '../../../database/migrations/010_levantamiento_topografico.sql'), 'utf8'));
+  }
+  await db.query(`TRUNCATE levantamientos_topograficos, archivos_tecnicos, vias_osm, puntos_interes, decisiones_adquisicion, puntajes_viabilidad, informacion_financiera,
     situaciones_legales, criterios_tecnicos, terrenos_candidatos, ofertas_terreno, usuarios RESTART IDENTITY CASCADE`);
   const hash = await bcrypt.hash('leones123', 4);
   for (const rol of ['tecnica', 'legal', 'administrativa', 'gerencia']) {

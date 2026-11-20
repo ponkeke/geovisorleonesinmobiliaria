@@ -11,8 +11,10 @@ router.post('/ofertas', c.crearOferta);
 router.post('/auth/login', c.login);
 router.get('/poligonos/registrados', limitadores.contornos, c.contornosRegistrados);
 router.post('/poligonos/validar', limitadores.validarPoligono, c.validarPoligono);
+router.get('/catastro/predio', limitadores.predio, c.predioCatastro);   // contorno del predio bajo un clic (sin datos personales)
 
 // Internas
+router.get('/catastro/lote', requireAuth, limitadores.catastro, c.loteCatastro);
 router.use('/terrenos', requireAuth);
 router.get('/terrenos', c.listarTerrenos);
 router.get('/terrenos/:id', c.detalleTerreno);
@@ -25,6 +27,7 @@ router.get('/terrenos/:id/archivos/:idArchivo', c.descargarArchivo);
 router.post('/terrenos/:id/archivos', requireRole('tecnica', 'legal', 'administrativa'), cuerpoArchivo, c.subirArchivo);
 router.delete('/terrenos/:id/archivos/:idArchivo', requireRole('tecnica', 'legal', 'administrativa'), c.eliminarArchivo);
 router.post('/terrenos/:id/criterios-tecnicos', requireRole('tecnica'), c.criteriosTecnicos);
+router.post('/terrenos/:id/levantamiento', requireRole('tecnica'), c.levantamiento);
 router.post('/terrenos/:id/situacion-legal', requireRole('legal'), c.situacionLegal);
 router.post('/terrenos/:id/informacion-financiera', requireRole('administrativa'), c.informacionFinanciera);
 router.post('/terrenos/:id/calcular-viabilidad', c.calcularViabilidad);

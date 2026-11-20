@@ -12,12 +12,12 @@ const LEONES = { leon1, leon2 };
 const PASOS = [
   { img: guia1, leon: 'leon2', titulo: 'Busca tu terreno',
     texto: 'Escribe la dirección o una referencia en el buscador del mapa para ubicarte rápidamente.' },
-  { img: guia2, leon: 'leon2', titulo: 'Marca las esquinas',
-    texto: 'Haz clic en cada esquina de tu terreno (mínimo 3) y pulsa «Finalizar». Arrastra los puntos para ajustar. No se puede dibujar sobre avenidas, jirones, pasajes, ríos ni lagos.' },
+  { img: guia2, leon: 'leon2', titulo: 'Elige o dibuja tu terreno',
+    texto: 'Acerca el mapa hasta ver los lotes del catastro (contorno naranja) y haz clic sobre el tuyo. Si tu terreno no aparece, pulsa «Dibujar mi terreno» y marca sus esquinas en el mapa.' },
   { img: guia3, leon: 'leon1', titulo: 'Revisa la dirección',
-    texto: 'La dirección se completa sola según tu contorno. Puedes corregirla si hace falta.' },
+    texto: 'La dirección se completa sola según el lote elegido. Puedes corregirla si hace falta.' },
   { img: guia4, leon: 'leon1', titulo: 'Envía tu oferta',
-    texto: 'Cuando el contorno sea válido, pulsa «Enviar oferta» para terminar.' },
+    texto: 'Cuando el lote sea válido, pulsa «Enviar oferta» para terminar.' },
 ];
 
 // Guía previa al mapa: 4 pasos con captura y el león mascota, que se desvanece al cambiar de pose.
